@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -17,7 +16,7 @@ import (
 func NewContainer(image, codeTar string, opts *ContainerOptions) (ContainerID, error) {
 	contID, err := cf.Create(image, opts)
 	if err != nil {
-		log.Printf("Failed container creation\n")
+		log.Printf("Failed container creation")
 		return "", err
 	}
 
@@ -25,7 +24,7 @@ func NewContainer(image, codeTar string, opts *ContainerOptions) (ContainerID, e
 		decodedCode, _ := base64.StdEncoding.DecodeString(codeTar)
 		err = cf.CopyToContainer(contID, bytes.NewReader(decodedCode), "/app/")
 		if err != nil {
-			log.Printf("Failed code copy\n")
+			log.Printf("Failed code copy")
 			return "", err
 		}
 	}
@@ -53,12 +52,7 @@ func Execute(contID ContainerID, req *executor.InvocationRequest) (*executor.Inv
 	if err != nil || resp == nil {
 		return nil, waitDuration, fmt.Errorf("Request to executor failed: %v", err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			log.Printf("Error while closing response body\n")
-		}
-	}(resp.Body)
+	defer resp.Body.Close()
 
 	d := json.NewDecoder(resp.Body)
 	response := &executor.InvocationResult{}
@@ -94,7 +88,7 @@ func sendPostRequestWithRetries(url string, body *bytes.Buffer) (*http.Response,
 		} else if attempts > 3 {
 			// It is common to have a failure after a cold start, so
 			// we avoid logging failures on the first attempt(s)
-			log.Printf("Warning: Retrying POST to executor (attempts: %d): %v\n", attempts, err)
+			log.Printf("Invocation POST failed (attempt %d): %v", attempts, err)
 		}
 
 		time.Sleep(time.Duration(backoffMillis * int(time.Millisecond)))
@@ -102,14 +96,14 @@ func sendPostRequestWithRetries(url string, body *bytes.Buffer) (*http.Response,
 		attempts += 1
 
 		if backoffMillis < MAX_BACKOFF_MILLIS {
-			backoffMillis = minInt(backoffMillis*2, MAX_BACKOFF_MILLIS)
+			backoffMillis = min(backoffMillis*2, MAX_BACKOFF_MILLIS)
 		}
 	}
 
 	return nil, time.Duration(totalWaitMillis * int(time.Millisecond)), err
 }
 
-func minInt(a, b int) int {
+func min(a, b int) int {
 	if a <= b {
 		return a
 	} else {

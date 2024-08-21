@@ -35,7 +35,6 @@ You can write a `Dockerfile` as follows to build your own runtime image, e.g.:
 	COPY function.py /
 	# ...
 
-A complete [example](../examples/c++/README.md) is provided for C++.
 
 ## Custom image (the better way)
 

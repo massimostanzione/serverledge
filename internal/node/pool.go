@@ -60,7 +60,7 @@ func (fp *ContainerPool) putReadyContainer(contID container.ContainerID, expirat
 	})
 }
 
-func newFunctionPool(_ *function.Function) *ContainerPool {
+func newFunctionPool(f *function.Function) *ContainerPool {
 	fp := &ContainerPool{}
 	fp.busy = list.New()
 	fp.ready = list.New()
@@ -123,11 +123,11 @@ func AcquireWarmContainer(f *function.Function) (container.ContainerID, error) {
 	}
 
 	if !acquireResources(f.CPUDemand, 0, false) {
-		//log.Printf("Not enough CPU to start a warm container for %s", f)
+		log.Printf("Not enough CPU to start a warm container for %s", f)
 		return "", OutOfResourcesErr
 	}
 
-	//log.Printf("Acquired resources for warm container. Now: %v", Resources)
+	log.Printf("Acquired resources for warm container. Now: %v", Resources)
 	return contID, nil
 }
 
@@ -143,16 +143,18 @@ func ReleaseContainer(contID container.ContainerID, f *function.Function) {
 	fp := getFunctionPool(f)
 
 	// we must update the busy list by removing this element
+	var deleted interface{}
 	elem := fp.busy.Front()
 	for ok := elem != nil; ok; ok = elem != nil {
 		if elem.Value.(container.ContainerID) == contID {
-			fp.busy.Remove(elem) // delete the element from the busy list
+			deleted = fp.busy.Remove(elem) // delete the element from the busy list
 			break
 		}
 		elem = elem.Next()
 	}
-
-	fp.putReadyContainer(contID, expTime)
+	if deleted != nil {
+		fp.putReadyContainer(contID, expTime)
+	}
 
 	releaseResources(f.CPUDemand, 0)
 
@@ -165,39 +167,31 @@ func ReleaseContainer(contID container.ContainerID, f *function.Function) {
 func NewContainer(fun *function.Function) (container.ContainerID, error) {
 	Resources.Lock()
 	if !acquireResources(fun.CPUDemand, fun.MemoryMB, true) {
-		//log.Printf("Not enough resources for the new container.")
+		log.Printf("Not enough resources for the new container - mem demand: %d - CPU demand: %d.", fun.MemoryMB, fun.CPUDemand)
 		Resources.Unlock()
 		return "", OutOfResourcesErr
 	}
 
-	//log.Printf("Acquired resources for new container. Now: %v", Resources)
+	log.Printf("Acquired resources for new container. Now: %v", Resources)
 	Resources.Unlock()
 
 	return NewContainerWithAcquiredResources(fun)
-}
-
-func getImageForFunction(fun *function.Function) (string, error) {
-	var image string
-	if fun.Runtime == container.CUSTOM_RUNTIME {
-		image = fun.CustomImage
-	} else {
-		runtime, ok := container.RuntimeToInfo[fun.Runtime]
-		if !ok {
-			log.Printf("Unknown runtime: %s\n", fun.Runtime)
-			return "", fmt.Errorf("Invalid runtime: %s", fun.Runtime)
-		}
-		image = runtime.Image
-	}
-	return image, nil
 }
 
 // NewContainerWithAcquiredResources spawns a new container for the given
 // function, assuming that the required CPU and memory resources have been
 // already been acquired.
 func NewContainerWithAcquiredResources(fun *function.Function) (container.ContainerID, error) {
-	image, err := getImageForFunction(fun)
-	if err != nil {
-		return "", err
+	var image string
+	if fun.Runtime == container.CUSTOM_RUNTIME {
+		image = fun.CustomImage
+	} else {
+		runtime, ok := container.RuntimeToInfo[fun.Runtime]
+		if !ok {
+			log.Printf("Unknown runtime: %s", fun.Runtime)
+			return "", fmt.Errorf("Invalid runtime: %s", fun.Runtime)
+		}
+		image = runtime.Image
 	}
 
 	contID, err := container.NewContainer(image, fun.TarFunctionCode, &container.ContainerOptions{
@@ -206,7 +200,7 @@ func NewContainerWithAcquiredResources(fun *function.Function) (container.Contai
 	})
 
 	if err != nil {
-		log.Printf("Failed container creation: %v\n", err)
+		log.Printf("Failed container creation: %v", err)
 	}
 
 	Resources.Lock()
@@ -297,11 +291,8 @@ func DeleteExpiredContainer() {
 
 				memory, _ := container.GetMemoryMB(warmed.contID)
 				releaseResources(0, memory)
-				err := container.Destroy(warmed.contID)
-				if err != nil {
-					log.Printf("Error while destroying container %s: %s\n", warmed.contID, err)
-				}
-				log.Printf("Released resources. Now: %v\n", &Resources)
+				container.Destroy(warmed.contID)
+				log.Printf("Released resources. Now: %v", Resources)
 			} else {
 				elem = elem.Next()
 			}
@@ -340,9 +331,9 @@ func ShutdownWarmContainersFor(f *function.Function) {
 		for _, contID := range contIDs {
 			// No need to update available resources here
 			if err := container.Destroy(contID); err != nil {
-				log.Printf("An error occurred while deleting %s: %v\n", contID, err)
+				log.Printf("An error occurred while deleting %s: %v", contID, err)
 			} else {
-				log.Printf("Deleted %s\n", contID)
+				log.Printf("Deleted %s", contID)
 			}
 		}
 	}(containersToDelete)
@@ -363,14 +354,11 @@ func ShutdownAllContainers() {
 			pool.ready.Remove(temp)
 
 			memory, _ := container.GetMemoryMB(warmed.contID)
-			err := container.Destroy(warmed.contID)
-			if err != nil {
-				log.Printf("Error while destroying container %s: %s", warmed.contID, err)
-			}
+			container.Destroy(warmed.contID)
 			Resources.AvailableMemMB += memory
 		}
 
-		functionDescriptor, _ := function.GetFunction(fun)
+		function, _ := function.GetFunction(fun)
 
 		elem = pool.busy.Front()
 		for ok := elem != nil; ok; ok = elem != nil {
@@ -381,12 +369,9 @@ func ShutdownAllContainers() {
 			pool.ready.Remove(temp)
 
 			memory, _ := container.GetMemoryMB(contID)
-			err := container.Destroy(contID)
-			if err != nil {
-				log.Printf("Error while destroying container %s: %s", contID, err)
-			}
+			container.Destroy(contID)
 			Resources.AvailableMemMB += memory
-			Resources.AvailableCPUs += functionDescriptor.CPUDemand
+			Resources.AvailableCPUs += function.CPUDemand
 		}
 	}
 }
@@ -401,27 +386,4 @@ func WarmStatus() map[string]int {
 	}
 
 	return warmPool
-}
-
-func PrewarmInstances(f *function.Function, count int64, forcePull bool) (int64, error) {
-	image, err := getImageForFunction(f)
-	if err != nil {
-		return 0, err
-	}
-	err = container.DownloadImage(image, forcePull)
-	if err != nil {
-		return 0, err
-	}
-
-	var spawned int64 = 0
-	for spawned < count {
-		_, err = NewContainer(f)
-		if err != nil {
-			log.Printf("Prespawning failed: %v\n", err)
-			return spawned, err
-		}
-		spawned += 1
-	}
-
-	return spawned, nil
 }

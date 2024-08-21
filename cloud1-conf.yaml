@@ -1,0 +1,7 @@
+container.pool.memory: 1024
+etcd.address: "192.168.1.245:2379"
+scheduler.queue.capacity: 0
+metrics.enabled: false
+cloud: true
+cloud.cost: 0.000005
+api.port: 1331

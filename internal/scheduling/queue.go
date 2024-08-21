@@ -76,7 +76,7 @@ func (q *FIFOQueue) Front() *scheduledRequest {
 	return v
 }
 
-// Len returns the current length of the queue
+// Returns the current length of the queue
 func (q *FIFOQueue) Len() int {
 	return q.size
 }

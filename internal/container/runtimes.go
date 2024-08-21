@@ -11,7 +11,8 @@ const CUSTOM_RUNTIME = "custom"
 var refreshedImages = map[string]bool{}
 
 var RuntimeToInfo = map[string]RuntimeInfo{
-	"python310":  {"grussorusso/serverledge-python310", []string{"python", "/entrypoint.py"}},
-	"nodejs17":   {"grussorusso/serverledge-nodejs17", []string{"node", "/entrypoint.js"}},
-	"nodejs17ng": {"grussorusso/serverledge-nodejs17ng", []string{}},
+	//TODO reset container repo
+	"python310":  RuntimeInfo{"ferrarally/serverledge-python310", []string{"python", "/entrypoint.py"}},
+	"nodejs17":   RuntimeInfo{"ferrarally/serverledge-nodejs17", []string{"node", "/entrypoint.js"}},
+	"nodejs17ng": RuntimeInfo{"ferrarally/serverledge-nodejs17ng", []string{}},
 }

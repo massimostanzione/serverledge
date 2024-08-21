@@ -1,0 +1,12 @@
+etcd.address: "192.168.1.245:2379"
+api.port: 1324
+storage.address: "http://localhost:8086"
+storage.token: "serverledge"
+storage.orgname: "serverledge"
+mab.agent.enabled: true
+mab.agent.interval: 10
+mab.agent.strategy: "Epsilon-Greedy"
+mab.agent.reward.alpha: 1
+mab.agent.reward.beta: 0
+mab.agent.reward.gamma: 0
+mab.agent.reward.delta: 0

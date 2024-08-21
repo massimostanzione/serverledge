@@ -1,10 +1,5 @@
 # Writing functions
 
-Some languages have built-in support in Serverledge and is extremely easy to
-write new functions (e.g., Python, nodejs). 
-For other languages, [custom container images](./custom_runtime.md) can be used to deploy and run
-functions.
-
 ## Python
 
 Available runtime: `python310` (Python 3.10)
@@ -30,4 +25,4 @@ An example is given in `examples/sieve.js`.
 
 ## Custom function runtimes
 
-Follow [these instructions](./custom_runtime.md).
+Follow [these instructions](./docs/custom_runtime.md).

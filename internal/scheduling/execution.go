@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grussorusso/serverledge/internal/config"
 	"github.com/grussorusso/serverledge/internal/container"
 	"github.com/grussorusso/serverledge/internal/executor"
 )
@@ -17,17 +18,15 @@ func Execute(contID container.ContainerID, r *scheduledRequest) error {
 	var req executor.InvocationRequest
 	if r.Fun.Runtime == container.CUSTOM_RUNTIME {
 		req = executor.InvocationRequest{
-			Params:       r.Params,
-			ReturnOutput: r.ReturnOutput,
+			Params: r.Params,
 		}
 	} else {
 		cmd := container.RuntimeToInfo[r.Fun.Runtime].InvocationCmd
 		req = executor.InvocationRequest{
-			Command:      cmd,
-			Params:       r.Params,
-			Handler:      r.Fun.Handler,
-			HandlerDir:   HANDLER_DIR,
-			ReturnOutput: r.ReturnOutput,
+			cmd,
+			r.Params,
+			r.Fun.Handler,
+			HANDLER_DIR,
 		}
 	}
 
@@ -47,9 +46,12 @@ func Execute(contID container.ContainerID, r *scheduledRequest) error {
 	}
 
 	r.ExecReport.Result = response.Result
-	r.ExecReport.Output = response.Output
 	r.ExecReport.Duration = time.Now().Sub(t0).Seconds() - invocationWait.Seconds()
 	r.ExecReport.ResponseTime = time.Now().Sub(r.Arrival).Seconds()
+	r.ExecReport.Cost = 0
+
+	// Add the cost of the cloud in the report
+	r.ExecReport.CostCloud = config.GetFloat(config.CLOUD_NODE_COST, 0.0) * r.ExecReport.Duration * (float64(r.Fun.MemoryMB) / 1024)
 
 	// initializing containers may require invocation retries, adding
 	// latency

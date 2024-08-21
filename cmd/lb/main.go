@@ -4,38 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/grussorusso/serverledge/internal/config"
 	"github.com/grussorusso/serverledge/internal/lb"
 	"github.com/grussorusso/serverledge/internal/registration"
 	"github.com/grussorusso/serverledge/utils"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
-
-func registerTerminationHandler(e *echo.Echo) {
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt)
-
-	go func() {
-		select {
-		case sig := <-c:
-			fmt.Printf("Got %s signal. Terminating...\n", sig)
-
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-			if err := e.Shutdown(ctx); err != nil {
-				e.Logger.Fatal(err)
-			}
-
-			os.Exit(0)
-		}
-	}()
-}
 
 func main() {
 	configFileName := ""
@@ -49,15 +23,10 @@ func main() {
 	registry := &registration.Registry{Area: "lb/" + region}
 	hostport := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), config.GetInt(config.API_PORT, 1323))
 	if _, err := registry.RegisterToEtcd(hostport); err != nil {
-		log.Printf("Could not register to Etcd: %v\n", err)
+		log.Printf("%s could not register to Etcd: %v", lb.LB, err)
 	}
 
-	e := echo.New()
-	e.HideBanner = true
-	e.Use(middleware.Recover())
+	log.Println(lb.LB, "Load Balancer registered:", hostport)
 
-	// Register a signal handler to cleanup things on termination
-	registerTerminationHandler(e)
-
-	lb.StartReverseProxy(e, region)
+	lb.StartReverseProxy(registry, region)
 }

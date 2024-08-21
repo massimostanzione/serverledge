@@ -16,7 +16,7 @@ import (
 // UDPStatusServer listen for incoming request from other edge-nodes which want to retrieve the status of this server
 // this listener should be called asynchronously in the main function
 func UDPStatusServer() {
-	hostname := utils.GetIpAddress().String()
+	hostname := config.GetString(config.API_IP, utils.GetIpAddress().String())
 	port := config.GetInt(config.LISTEN_UDP_PORT, 9876)
 	address := fmt.Sprintf("%s:%d", hostname, port)
 	udpAddr, err := net.ResolveUDPAddr("udp", address)
@@ -30,14 +30,8 @@ func UDPStatusServer() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("UDP server up and listening on port %d\n", port)
-
-	defer func(udpConn *net.UDPConn) {
-		err := udpConn.Close()
-		if err != nil {
-			log.Printf("Error while closing UDP connection: %s\n", err)
-		}
-	}(udpConn)
+	log.Printf("UDP server up and listening on port %d", port)
+	defer udpConn.Close()
 
 	for {
 		// wait for UDP client to connect
@@ -67,14 +61,23 @@ func handleUDPConnection(conn *net.UDPConn) {
 }
 
 func getCurrentStatusInformation() (status []byte, err error) {
-	portNumber := config.GetInt("api.port", 1323)
-	url := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), portNumber)
+	portNumberApi := config.GetInt("api.port", 1323)
+	portNumberReg := config.GetInt("registry.udp.port", 9876)
+	hostname := config.GetString(config.API_IP, utils.GetIpAddress().String())
+	urlApi := fmt.Sprintf("http://%s:%d", hostname, portNumberApi)
+	urlReg := fmt.Sprintf("http://%s:%d", hostname, portNumberReg)
+
+	addr := NodeInterfaces{
+		NodeAddress:     urlApi,
+		RegistryAddress: urlReg,
+	}
+
 	response := StatusInformation{
-		Url:                     url,
+		Addresses:               addr,
 		AvailableWarmContainers: node.WarmStatus(),
 		AvailableMemMB:          node.Resources.AvailableMemMB,
 		AvailableCPUs:           node.Resources.AvailableCPUs,
-		DropCount:               node.Resources.DropCount,
+		DropCount:               node.Resources.DropRequestsCount,
 		Coordinates:             *Reg.Client.GetCoordinate(),
 	}
 
@@ -82,13 +85,14 @@ func getCurrentStatusInformation() (status []byte, err error) {
 
 }
 
-func statusInfoRequest(hostname string) (info *StatusInformation, duration time.Duration) {
-	port := config.GetInt(config.LISTEN_UDP_PORT, 9876)
-	address := fmt.Sprintf("%s:%d", hostname, port)
+// statusInfoRequest sends a request to the local registry of a node
+func statusInfoRequest(hostname string, port string) (info *StatusInformation, duration time.Duration) {
+	// Construct the address of the local registry of the target node
+	address := fmt.Sprintf("%s:%s", hostname, port)
 
 	remoteAddr, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
-		log.Printf("Unreachable server %s\n", address)
+		log.Printf("Unreachable server %s", address)
 		return nil, 0
 	}
 
@@ -97,12 +101,7 @@ func statusInfoRequest(hostname string) (info *StatusInformation, duration time.
 		log.Println(err)
 		return nil, 0
 	}
-	defer func(udpConn *net.UDPConn) {
-		err := udpConn.Close()
-		if err != nil {
-			log.Printf("Error while closing UDP connection: %s\n", err)
-		}
-	}(udpConn)
+	defer udpConn.Close()
 
 	// write a message to server, here 1 byte is enough
 	message := []byte("A")
@@ -130,5 +129,6 @@ func statusInfoRequest(hostname string) (info *StatusInformation, duration time.
 		fmt.Println("Can not unmarshal JSON")
 		return nil, 0
 	}
+
 	return &result, rtt
 }

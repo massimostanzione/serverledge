@@ -4,12 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/grussorusso/serverledge/internal/api"
 	"github.com/grussorusso/serverledge/internal/client"
 	"github.com/grussorusso/serverledge/internal/config"
 	"github.com/grussorusso/serverledge/internal/function"
@@ -69,7 +68,6 @@ var params []string
 var paramsFile string
 var asyncInvocation bool
 var verbose bool
-var returnOutput bool
 
 func Init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
@@ -83,7 +81,6 @@ func Init() {
 	invokeCmd.Flags().StringSliceVarP(&params, "param", "p", nil, "Function parameter: <name>:<value>")
 	invokeCmd.Flags().StringVarP(&paramsFile, "params_file", "j", "", "File containing parameters (JSON)")
 	invokeCmd.Flags().BoolVarP(&asyncInvocation, "async", "a", false, "Asynchronous invocation")
-	invokeCmd.Flags().BoolVarP(&returnOutput, "ret_output", "o", false, "Capture function output (if supported by used runtime)")
 
 	rootCmd.AddCommand(createCmd)
 	createCmd.Flags().StringVarP(&funcName, "function", "f", "", "name of the function")
@@ -110,18 +107,11 @@ func Init() {
 	}
 }
 
-func showHelpAndExit(cmd *cobra.Command) {
-	err := cmd.Help()
-	if err != nil {
-		fmt.Printf("Error while showing help for %s: %s\n", cmd.Use, err)
-	}
-	os.Exit(1)
-}
-
 func invoke(cmd *cobra.Command, args []string) {
 	if len(funcName) < 1 {
 		fmt.Printf("Invalid function name.\n")
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
 
 	// Parse parameters
@@ -136,23 +126,16 @@ func invoke(cmd *cobra.Command, args []string) {
 		for _, rawParam := range params {
 			tokens := strings.Split(rawParam, ":")
 			if len(tokens) < 2 {
-				showHelpAndExit(cmd)
+				cmd.Help()
+				return
 			}
 			paramsMap[tokens[0]] = strings.Join(tokens[1:], ":")
 		}
 	}
 	if len(paramsFile) > 0 {
 		jsonFile, err := os.Open(paramsFile)
-
-		defer func(jsonFile *os.File) {
-			err := jsonFile.Close()
-			if err != nil {
-				fmt.Printf("Could not close JSON file '%s'\n", jsonFile.Name())
-				os.Exit(1)
-			}
-		}(jsonFile)
-
-		byteValue, _ := io.ReadAll(jsonFile)
+		defer jsonFile.Close()
+		byteValue, _ := ioutil.ReadAll(jsonFile)
 		err = json.Unmarshal(byteValue, &paramsMap)
 		if err != nil {
 			fmt.Printf("Could not parse JSON-encoded parameters from '%s'\n", paramsFile)
@@ -162,22 +145,23 @@ func invoke(cmd *cobra.Command, args []string) {
 
 	// Prepare request
 	request := client.InvocationRequest{
-		Params:          paramsMap,
-		QoSClass:        int64(api.DecodeServiceClass(qosClass)),
+		Params: paramsMap,
+		//QoSClass:        int64(api.DecodeServiceClass(qosClass)),
+		QoSClass:        qosClass,
 		QoSMaxRespT:     qosMaxRespT,
 		CanDoOffloading: true,
-		ReturnOutput:    returnOutput,
 		Async:           asyncInvocation}
 	invocationBody, err := json.Marshal(request)
 	if err != nil {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
 
 	// Send invocation request
 	url := fmt.Sprintf("http://%s:%d/invoke/%s", ServerConfig.Host, ServerConfig.Port, funcName)
 	resp, err := utils.PostJson(url, invocationBody)
 	if err != nil {
-		fmt.Printf("Invocation failed: %v\n", err)
+		fmt.Printf("Invocation failed: %v", err)
 		os.Exit(2)
 	}
 	utils.PrintJsonResponse(resp.Body)
@@ -185,19 +169,23 @@ func invoke(cmd *cobra.Command, args []string) {
 
 func create(cmd *cobra.Command, args []string) {
 	if funcName == "" || runtime == "" {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
+
 	if runtime == "custom" && customImage == "" {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	} else if runtime != "custom" && src == "" {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
 
 	var encoded string
 	if runtime != "custom" {
 		srcContent, err := readSourcesAsTar(src)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			fmt.Printf("%v", err)
 			os.Exit(3)
 		}
 		encoded = base64.StdEncoding.EncodeToString(srcContent)
@@ -213,7 +201,8 @@ func create(cmd *cobra.Command, args []string) {
 	}
 	requestBody, err := json.Marshal(request)
 	if err != nil {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
 
 	url := fmt.Sprintf("http://%s:%d/create", ServerConfig.Host, ServerConfig.Port)
@@ -235,37 +224,27 @@ func readSourcesAsTar(srcPath string) ([]byte, error) {
 	var tarFileName string
 
 	if fileInfo.IsDir() || !strings.HasSuffix(srcPath, ".tar") {
-		file, err := os.CreateTemp("/tmp", "serverledgesource")
+		file, err := ioutil.TempFile("/tmp", "serverledgesource")
 		if err != nil {
 			return nil, err
 		}
-		defer func(name string) {
-			err := os.Remove(name)
-			if err != nil {
-				fmt.Printf("Error while trying to remove file '%s'\n", name)
-				os.Exit(1)
-			}
-		}(file.Name())
+		defer os.Remove(file.Name())
 
-		err = utils.Tar(srcPath, file)
-		if err != nil {
-			fmt.Printf("Error while trying to tar file '%s'\n", srcPath)
-			os.Exit(1)
-		}
+		utils.Tar(srcPath, file)
 		tarFileName = file.Name()
 	} else {
 		// this is already a tar file
 		tarFileName = srcPath
 	}
 
-	return os.ReadFile(tarFileName)
+	return ioutil.ReadFile(tarFileName)
 }
 
 func deleteFunction(cmd *cobra.Command, args []string) {
 	request := function.Function{Name: funcName}
 	requestBody, err := json.Marshal(request)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
+		fmt.Printf("Error: %v", err)
 		os.Exit(2)
 	}
 
@@ -300,7 +279,8 @@ func getStatus(cmd *cobra.Command, args []string) {
 
 func poll(cmd *cobra.Command, args []string) {
 	if len(requestId) < 1 {
-		showHelpAndExit(cmd)
+		cmd.Help()
+		os.Exit(1)
 	}
 
 	url := fmt.Sprintf("http://%s:%d/poll/%s", ServerConfig.Host, ServerConfig.Port, requestId)

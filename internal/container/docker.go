@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os/exec"
 
@@ -33,8 +34,19 @@ func InitDockerContainerFactory() *DockerFactory {
 
 func (cf *DockerFactory) Create(image string, opts *ContainerOptions) (ContainerID, error) {
 	if !cf.HasImage(image) {
-		_ = cf.PullImage(image)
-		// error ignored, as we might still have a stale copy of the image
+		log.Printf("Pulling image: %s", image)
+		pullResp, err := cf.cli.ImagePull(cf.ctx, image, types.ImagePullOptions{})
+		if err != nil {
+			log.Printf("Could not pull image: %s", image)
+			// we do not return here, as a stale copy of the image
+			// could still be available locally
+		} else {
+			defer pullResp.Close()
+			// This seems to be necessary to wait for the image to be pulled:
+			io.Copy(ioutil.Discard, pullResp)
+			log.Printf("Pulled image: %s", image)
+			refreshedImages[image] = true
+		}
 	}
 
 	contResources := container.Resources{Memory: opts.MemoryMB * 1048576} // convert to bytes
@@ -53,7 +65,7 @@ func (cf *DockerFactory) Create(image string, opts *ContainerOptions) (Container
 	id := resp.ID
 
 	r, err := cf.cli.ContainerInspect(cf.ctx, id)
-	log.Printf("Container %s has name %s\n", id, r.Name)
+	log.Printf("Container %s has name %s", id, r.Name)
 
 	return id, err
 }
@@ -91,25 +103,6 @@ func (cf *DockerFactory) HasImage(image string) bool {
 		}
 	}
 	return true
-}
-
-func (cf *DockerFactory) PullImage(image string) error {
-	pullResp, err := cf.cli.ImagePull(cf.ctx, image, types.ImagePullOptions{})
-	if err != nil {
-		return fmt.Errorf("Could not pull image '%s': %v", image, err)
-	}
-
-	defer func(pullResp io.ReadCloser) {
-		err := pullResp.Close()
-		if err != nil {
-			log.Printf("Could not close the docker image pull response\n")
-		}
-	}(pullResp)
-	// This seems to be necessary to wait for the image to be pulled:
-	_, _ = io.Copy(io.Discard, pullResp)
-	log.Printf("Pulled image: %s\n", image)
-	refreshedImages[image] = true
-	return nil
 }
 
 func (cf *DockerFactory) GetIPAddress(contID ContainerID) (string, error) {

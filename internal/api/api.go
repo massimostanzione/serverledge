@@ -43,14 +43,14 @@ func InvokeFunction(c echo.Context) error {
 	funcName := c.Param("fun")
 	fun, ok := function.GetFunction(funcName)
 	if !ok {
-		log.Printf("Dropping request for unknown fun '%s'\n", funcName)
-		return c.String(http.StatusNotFound, "Function unknown")
+		log.Printf("Dropping request for unknown fun '%s'", funcName)
+		return c.JSON(http.StatusNotFound, "")
 	}
 
 	var invocationRequest client.InvocationRequest
 	err := json.NewDecoder(c.Request().Body).Decode(&invocationRequest)
 	if err != nil && err != io.EOF {
-		log.Printf("Could not parse request: %v\n", err)
+		log.Printf("Could not parse request: %v", err)
 		return fmt.Errorf("could not parse request: %v", err)
 	}
 
@@ -59,15 +59,26 @@ func InvokeFunction(c echo.Context) error {
 	r.Fun = fun
 	r.Params = invocationRequest.Params
 	r.Arrival = time.Now()
-	r.Class = function.ServiceClass(invocationRequest.QoSClass)
+
+	className := invocationRequest.QoSClass
+	class, prs := scheduling.Classes[className]
+	if !prs {
+		class = scheduling.DefaultClass
+		className = "default"
+	}
+	r.ClassService = class
+
 	r.MaxRespT = invocationRequest.QoSMaxRespT
 	r.CanDoOffloading = invocationRequest.CanDoOffloading
 	r.Async = invocationRequest.Async
-	r.ReturnOutput = invocationRequest.ReturnOutput
 	r.ReqId = fmt.Sprintf("%s-%s%d", fun, node.NodeIdentifier[len(node.NodeIdentifier)-5:], r.Arrival.Nanosecond())
 	// init fields if possibly not overwritten later
+	r.ExecReport.Name = funcName
+	r.ExecReport.Class = className
 	r.ExecReport.SchedAction = ""
-	r.ExecReport.OffloadLatency = 0.0
+	r.ExecReport.OffloadLatencyCloud = 0.0
+	r.ExecReport.OffloadLatencyEdge = 0.0
+	r.ExecReport.InputSize = float64(scheduling.CalculatePacketSize(r))
 
 	if r.Async {
 		go scheduling.SubmitAsyncRequest(r)
@@ -79,7 +90,7 @@ func InvokeFunction(c echo.Context) error {
 	if errors.Is(err, node.OutOfResourcesErr) {
 		return c.String(http.StatusTooManyRequests, "")
 	} else if err != nil {
-		log.Printf("Invocation failed: %v\n", err)
+		log.Printf("Invocation failed: %v", err)
 		return c.String(http.StatusInternalServerError, "")
 	} else {
 		return c.JSON(http.StatusOK, function.Response{Success: true, ExecutionReport: r.ExecReport})
@@ -90,13 +101,13 @@ func InvokeFunction(c echo.Context) error {
 func PollAsyncResult(c echo.Context) error {
 	reqId := c.Param("reqId")
 	if len(reqId) < 0 {
-		return c.String(http.StatusNotFound, "")
+		return c.JSON(http.StatusNotFound, "")
 	}
 
 	etcdClient, err := utils.GetEtcdClient()
 	if err != nil {
 		log.Println("Could not connect to Etcd")
-		return c.String(http.StatusInternalServerError, "Failed to connect to the Global Registry")
+		return c.JSON(http.StatusInternalServerError, "")
 	}
 
 	ctx := context.Background()
@@ -105,14 +116,24 @@ func PollAsyncResult(c echo.Context) error {
 	res, err := etcdClient.Get(ctx, key)
 	if err != nil {
 		log.Println(err)
-		return c.String(http.StatusInternalServerError, "Could not retrieve results")
+		return c.JSON(http.StatusInternalServerError, "")
 	}
 
 	if len(res.Kvs) == 1 {
 		payload := res.Kvs[0].Value
+		var resp function.Response
+		err := json.Unmarshal(payload, &resp)
+
+		// TODO maybe remove
+		if err == nil {
+			//scheduling.CompletionAsync(resp)
+		} else {
+			log.Println(err)
+		}
+
 		return c.JSONBlob(http.StatusOK, payload)
 	} else {
-		return c.String(http.StatusNotFound, "")
+		return c.JSON(http.StatusNotFound, "")
 	}
 }
 
@@ -121,17 +142,17 @@ func CreateFunction(c echo.Context) error {
 	var f function.Function
 	err := json.NewDecoder(c.Request().Body).Decode(&f)
 	if err != nil && err != io.EOF {
-		log.Printf("Could not parse request: %v\n", err)
+		log.Printf("Could not parse request: %v", err)
 		return err
 	}
 
 	_, ok := function.GetFunction(f.Name) // TODO: we would need a system-wide lock here...
 	if ok {
-		log.Printf("Dropping request for already existing function '%s'\n", f.Name)
-		return c.String(http.StatusConflict, "")
+		log.Printf("Dropping request for already existing function '%s'", f.Name)
+		return c.JSON(http.StatusConflict, "")
 	}
 
-	log.Printf("New request: creation of %s\n", f.Name)
+	log.Printf("New request: creation of %s", f.Name)
 
 	// Check that the selected runtime exists
 	if f.Runtime != container.CUSTOM_RUNTIME {
@@ -143,7 +164,7 @@ func CreateFunction(c echo.Context) error {
 
 	err = f.SaveToEtcd()
 	if err != nil {
-		log.Printf("Failed creation: %v\n", err)
+		log.Printf("Failed creation: %v", err)
 		return c.JSON(http.StatusServiceUnavailable, "")
 	}
 	response := struct{ Created string }{f.Name}
@@ -155,21 +176,21 @@ func DeleteFunction(c echo.Context) error {
 	var f function.Function
 	err := json.NewDecoder(c.Request().Body).Decode(&f)
 	if err != nil && err != io.EOF {
-		log.Printf("Could not parse request: %v\n", err)
+		log.Printf("Could not parse request: %v", err)
 		return err
 	}
 
 	_, ok := function.GetFunction(f.Name) // TODO: we would need a system-wide lock here...
 	if !ok {
-		log.Printf("Dropping request for non existing function '%s'\n", f.Name)
-		return c.String(http.StatusNotFound, "Unknown function")
+		log.Printf("Dropping request for non existing function '%s'", f.Name)
+		return c.JSON(http.StatusNotFound, "")
 	}
 
-	log.Printf("New request: deleting %s\n", f.Name)
+	log.Printf("New request: deleting %s", f.Name)
 	err = f.Delete()
 	if err != nil {
-		log.Printf("Failed deletion: %v\n", err)
-		return c.String(http.StatusServiceUnavailable, "")
+		log.Printf("Failed deletion: %v", err)
+		return c.JSON(http.StatusServiceUnavailable, "")
 	}
 
 	// Delete local warm containers
@@ -195,40 +216,29 @@ func DecodeServiceClass(serviceClass string) (p function.ServiceClass) {
 func GetServerStatus(c echo.Context) error {
 	node.Resources.RLock()
 	defer node.Resources.RUnlock()
-	portNumber := config.GetInt("api.port", 1323)
-	url := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), portNumber)
+	portNumberApi := config.GetInt("api.port", 1323)
+	portNumberReg := config.GetInt("registry.udp.port", 9876)
+	urlApi := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), portNumberApi)
+	urlReg := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), portNumberReg)
+	nodeInterface := registration.NodeInterfaces{
+		NodeAddress:     urlApi,
+		RegistryAddress: urlReg,
+	}
 	response := registration.StatusInformation{
-		Url:            url,
-		AvailableMemMB: node.Resources.AvailableMemMB,
-		AvailableCPUs:  node.Resources.AvailableCPUs,
-		DropCount:      node.Resources.DropCount,
-		Coordinates:    *registration.Reg.Client.GetCoordinate(),
+		Addresses:               nodeInterface,
+		AvailableWarmContainers: node.WarmStatus(),
+		AvailableMemMB:          node.Resources.AvailableMemMB,
+		AvailableCPUs:           node.Resources.AvailableCPUs,
+		MaxMemMB:                node.Resources.MaxMemMB,
+		MaxCPUs:                 node.Resources.MaxCPUs,
+		CostCloud:               config.GetFloat(config.CLOUD_NODE_COST, 0.0),
+		DropCount:               node.Resources.DropRequestsCount,
+		RequestCount:            node.Resources.RequestsCount,
+	}
+	isInCloud := config.GetBool(config.IS_IN_CLOUD, false)
+	if !isInCloud {
+		response.Coordinates = *registration.Reg.Client.GetCoordinate()
 	}
 
-	return c.JSON(http.StatusOK, response)
-}
-
-// PrewarmFunction handles a prewarming request.
-func PrewarmFunction(c echo.Context) error {
-	var req client.PrewarmingRequest
-	err := json.NewDecoder(c.Request().Body).Decode(&req)
-	if err != nil && err != io.EOF {
-		log.Printf("Could not parse request: %v\n", err)
-		return err
-	}
-
-	fun, ok := function.GetFunction(req.Function)
-	if !ok {
-		log.Printf("Dropping request for unknown fun '%s'\n", req.Function)
-		return c.String(http.StatusNotFound, "Function unknown")
-	}
-
-	count, err := node.PrewarmInstances(fun, req.Instances, req.ForceImagePull)
-
-	if err != nil && !errors.Is(err, node.OutOfResourcesErr) {
-		log.Printf("Failed prewarming: %v\n", err)
-		return c.JSON(http.StatusServiceUnavailable, "")
-	}
-	response := struct{ Prewarmed int64 }{count}
 	return c.JSON(http.StatusOK, response)
 }

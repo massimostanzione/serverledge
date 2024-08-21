@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"strconv"
 
@@ -24,7 +24,7 @@ func main() {
 		if iPort, err := strconv.Atoi(envPort); err == nil {
 			cli.ServerConfig.Port = iPort
 		} else {
-			log.Fatalf("Invalid port number: %s\n", envPort)
+			fmt.Errorf("Invalid port number: %s\n", envPort)
 		}
 	}
 

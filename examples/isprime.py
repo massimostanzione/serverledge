@@ -1,7 +1,6 @@
 def handler(params, context):
     try:
         n = int(params["n"])
-        print(f"Checking n = {n}")
         result = is_prime(n)
         return {"IsPrime": result}
     except:

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,7 +28,6 @@ func startAPIServer(e *echo.Echo) {
 
 	// Routes
 	e.POST("/invoke/:fun", api.InvokeFunction)
-	e.POST("/prewarm", api.PrewarmFunction)
 	e.POST("/create", api.CreateFunction)
 	e.POST("/delete", api.DeleteFunction)
 	e.GET("/function", api.GetFunctions)
@@ -40,7 +38,7 @@ func startAPIServer(e *echo.Echo) {
 	portNumber := config.GetInt(config.API_PORT, 1323)
 	e.HideBanner = true
 
-	if err := e.Start(fmt.Sprintf(":%d", portNumber)); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := e.Start(fmt.Sprintf(":%d", portNumber)); err != nil && err != http.ErrServerClosed {
 		e.Logger.Fatal("shutting down the server")
 	}
 }
@@ -97,10 +95,16 @@ func registerTerminationHandler(r *registration.Registry, e *echo.Echo) {
 
 func main() {
 	configFileName := ""
+
 	if len(os.Args) > 1 {
 		configFileName = os.Args[1]
 	}
 	config.ReadConfiguration(configFileName)
+
+	configClassesFileName := ""
+	if len(os.Args) > 2 {
+		configClassesFileName = os.Args[2]
+	}
 
 	//setting up cache parameters
 	cacheSetup()
@@ -110,6 +114,7 @@ func main() {
 	isInCloud := config.GetBool(config.IS_IN_CLOUD, false)
 	if isInCloud {
 		registry.Area = "cloud/" + config.GetString(config.REGISTRY_AREA, "ROME")
+		log.Println("Cloud node cost: ", config.GetFloat(config.CLOUD_NODE_COST, 0))
 	} else {
 		registry.Area = config.GetString(config.REGISTRY_AREA, "ROME")
 	}
@@ -118,12 +123,15 @@ func main() {
 	_, err := registry.GetAll(true)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 
-	url := fmt.Sprintf("http://%s:%d", utils.GetIpAddress().String(), config.GetInt(config.API_PORT, 1323))
+	ip := config.GetString(config.API_IP, utils.GetIpAddress().String())
+	url := fmt.Sprintf("http://%s:%d", ip, config.GetInt(config.API_PORT, 1323))
 	myKey, err := registry.RegisterToEtcd(url)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 	node.NodeIdentifier = myKey
 
@@ -134,6 +142,7 @@ func main() {
 	// Register a signal handler to cleanup things on termination
 	registerTerminationHandler(registry, e)
 
+	scheduling.ReadClassesConfiguration(configClassesFileName)
 	schedulingPolicy := createSchedulingPolicy()
 	go scheduling.Run(schedulingPolicy)
 
@@ -141,6 +150,7 @@ func main() {
 		err = registration.InitEdgeMonitoring(registry)
 		if err != nil {
 			log.Fatal(err)
+			os.Exit(1)
 		}
 	}
 
@@ -159,6 +169,18 @@ func createSchedulingPolicy() scheduling.Policy {
 		return &scheduling.EdgePolicy{}
 	} else if policyConf == "custom1" {
 		return &scheduling.Custom1Policy{}
+	} else if policyConf == "customCloudOffload" {
+		return &scheduling.CustomCloudOffloadPolicy{}
+	} else if policyConf == "QoSAwareEdgeCloud" {
+		return &scheduling.QoSAwareOffloadPolicy{
+			CloudOnly: false,
+		}
+	} else if policyConf == "QoSAwareCloud" {
+		return &scheduling.QoSAwareOffloadPolicy{
+			CloudOnly: true,
+		}
+	} else if policyConf == "minR" {
+		return &scheduling.MinRPolicy{}
 	} else {
 		return &scheduling.DefaultLocalPolicy{}
 	}

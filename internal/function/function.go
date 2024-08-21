@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Function describes a serverless function.
+// A serverless Function.
 type Function struct {
 	Name            string
 	Runtime         string  // example: python310
@@ -22,7 +22,7 @@ type Function struct {
 	CustomImage     string  // used if custom runtime is chosen
 }
 
-func (f *Function) getEtcdKey() string {
+func (f Function) getEtcdKey() string {
 	return getEtcdKey(f.Name)
 }
 
@@ -71,7 +71,7 @@ func getFromEtcd(name string) (*Function, bool) {
 	if err != nil {
 		return nil, false
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	getResponse, err := cli.Get(ctx, getEtcdKey(name))
 	if err != nil || len(getResponse.Kvs) < 1 {
 		return nil, false

@@ -31,11 +31,11 @@ explains how to obtain and use the software, is available
 
 ## Building from sources
 
-1. Check that Golang 1.20+ is installed.
+1. Check that Golang is correctly installed on your machine.
 
-2. Download a copy of the source code.
+1. Download a copy of the source code.
 
-3. Build the project:
+1. Build the project:
 
 ```
 $ make
@@ -46,7 +46,7 @@ You will find executables in `./bin/`.
 ## Running (single-node deployment)
 
 As functions are executed within Docker containers, you need Docker to
-be installed on the host. Furthermore, Serverledge needs
+be installed on the host. Furthermore, the Serverledge node needs
 permissions to create containers.
 
 You also need an **etcd** server to run Serverledge. To quickly start a local
@@ -54,7 +54,7 @@ server:
 
 	$ ./scripts/start-etcd.sh   # stop it with ./scripts/stop-etcd.sh
 
-Start a local Serverledge node:
+Start a Serverledge node:
 
 	$ bin/serverledge
 
@@ -62,7 +62,7 @@ Start a local Serverledge node:
 
 Register a function `func` from example code:
 
-	$ bin/serverledge-cli create -f func --memory 200 --src examples/hello.py --runtime python310 --handler "hello.handler" 
+	$ bin/serverledge-cli create -f func --memory 600 --src examples/hello.py --runtime python310 --handler "hello.handler"
 
 Invoke `func` with arguments `a=2` and `b=3`:
 
@@ -80,8 +80,6 @@ where `input.json` may contain:
 		"b": 3
 	}
 
-#### Asynchronous Invocation
-
 Functions can be also invoked asynchronously using the `--async` flag:
 
 	$ bin/serverledge-cli invoke -f func --async
@@ -91,14 +89,6 @@ poll for the execution result:
 
 	$ bin/serverledge-cli poll --request <requestID>
 
-
-#### Getting function standard output
-
-You may want to see the content printed by the function to its standard output/error. To do so, add the `--return_output` flag (`-o` for short):
-
-	$ bin/serverledge-cli invoke -f func -p "a:2" -p "b:3" --return_output
-
-Note that we currently support output capture only for some runtimes (e.g., Python supports it).
 
 ## Distributed Deployment
 
@@ -146,10 +136,10 @@ The configuration file may look like this:
 
 ## Additional Documentation
 
- - [API reference](./docs/api.md)
+
  - [Writing functions](./docs/writing-functions.md)
- - [Serverledge Internals: Executor](./docs/executor.md)
  - [Metrics](./docs/metrics.md)
+ - [Serverledge Internals: Executor](./docs/executor.md)
 
 
 ## License

@@ -11,7 +11,7 @@ type Custom1Policy struct {
 func (p *Custom1Policy) Init() {
 }
 
-func (p *Custom1Policy) OnCompletion(_ *scheduledRequest) {
+func (p *Custom1Policy) OnCompletion(r *scheduledRequest) {
 
 }
 
@@ -25,7 +25,7 @@ func (p *Custom1Policy) OnArrival(r *scheduledRequest) {
 	} else if r.CanDoOffloading && r.RequestQoS.Class == function.HIGH_PERFORMANCE {
 		url := pickEdgeNodeForOffloading(r)
 		if url != "" {
-			handleOffload(r, url)
+			//handleOffload(r, url)
 		} else {
 			dropRequest(r)
 		}
