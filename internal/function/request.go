@@ -37,6 +37,7 @@ type ExecutionReport struct {
 	OffloadLatencyEdge  float64
 	Cost                float64
 	CostCloud           float64 // Cost of the cloud node
+	Utility             float64 // Utility
 	InputSize           float64
 } // if verticallyOffloaded == true and SchedAction == "offloa
 

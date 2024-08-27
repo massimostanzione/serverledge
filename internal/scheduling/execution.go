@@ -53,6 +53,9 @@ func Execute(contID container.ContainerID, r *scheduledRequest) error {
 	// Add the cost of the cloud in the report
 	r.ExecReport.CostCloud = config.GetFloat(config.CLOUD_NODE_COST, 0.0) * r.ExecReport.Duration * (float64(r.Fun.MemoryMB) / 1024)
 
+	// Add utility to the report
+	r.ExecReport.Utility = r.ClassService.Utility
+
 	// initializing containers may require invocation retries, adding
 	// latency
 	r.ExecReport.InitTime += invocationWait.Seconds()

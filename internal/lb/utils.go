@@ -12,54 +12,6 @@ import (
 	"github.com/grussorusso/serverledge/internal/registration"
 )
 
-// createMABAgent initializes and returns a Multi-Armed Bandit (MAB) agent
-// based on the configuration settings. The agent's exploration strategy
-// is selected from available options like Epsilon-Greedy, UCB, ResetUCB,
-// or SWUCB, and is configured with the appropriate reward parameters.
-/*
-func createMABAgent() *mab.MABAgent {
-
-	// Configure reward
-	alpha := config.GetFloat(config.MAB_AGENT_REWARD_ALPHA, 0)
-	beta := config.GetFloat(config.MAB_AGENT_REWARD_BETA, 0)
-	gamma := config.GetFloat(config.MAB_AGENT_REWARD_GAMMA, 1)
-	delta := config.GetFloat(config.MAB_AGENT_REWARD_DELTA, 0)
-	rewardConfig := mab.RewardConfig{Alpha: alpha, Beta: beta, Gamma: gamma, Delta: delta}
-
-	// Get available load balancing policies
-	policies := getAllPolicies()
-	log.Println(lbcommon.MAB, "Policies found by the MAB agent:", policies)
-
-	// Configure MAB agent's exploration strategy and create it
-	mabStrategy := config.GetString(config.MAB_AGENT_STRATEGY, string(mab.EpsilonGreedyStrategy))
-
-	switch mab.Strategy(mabStrategy) {
-	case mab.UCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
-		ucbStrategy := mab.NewUCB(explorationFactor, policies, rewardConfig)
-		log.Println(lbcommon.MAB, "Using UCB Strategy")
-		return mab.NewMABAgent(ucbStrategy)
-	case mab.ResetUCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
-		resetInterval := config.GetInt(config.MAB_AGENT_RUCB_RESETINTERVAL, 0)
-		rucbStrategy := mab.NewResetUCB(resetInterval, explorationFactor, policies, rewardConfig)
-		log.Println(lbcommon.MAB, "Using ResetUCB Strategy")
-		return mab.NewMABAgent(rucbStrategy)
-	case mab.SWUCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
-		windowSize := config.GetInt(config.MAB_AGENT_SWUCB_WINDOWSIZE, 10)
-		swucbStrategy := mab.NewSlidingWindowUCB(windowSize, explorationFactor, policies, rewardConfig)
-		log.Println(lbcommon.MAB, "Using SWUCB Strategy")
-		return mab.NewMABAgent(swucbStrategy)
-	default: // EpsilonGreedyStrategy default
-		epsilon := config.GetFloat(config.MAB_AGENT_EPSILON, 0.1)
-		epsilonGreedyStrategy := mab.NewEpsilonGreedy(epsilon, policies, rewardConfig)
-		log.Println(lbcommon.MAB, "Using Epsilon-Greedy Strategy")
-		return mab.NewMABAgent(epsilonGreedyStrategy)
-	}
-}
-*/
-
 // compareURLTargets checks if two slices of URL pointers contain the same URLs, regardless of order.
 // It returns true if both slices have the same URLs with the same frequency; otherwise, it returns false.
 // The function first compares the lengths of the slices, then uses a map to count URL occurrences and
@@ -193,11 +145,10 @@ func newStats(lbPolicy lbcommon.Policy, targets []*url.URL) *mab.Stats {
 	}
 }
 
+// updateStats updates the load balancer's statistics based on the execution report of a request.
 func updateStats(lbP *LBProxy, executionReport function.ExecutionReport, backend string, dropped bool) {
-
 	lbP.newStats.Arrivals += 1
 	lbP.newStats.ServerLoads[backend] += 1
-
 	if dropped { // Request dropped
 		lbP.newStats.Drops += 1
 		lbP.newStats.DroppedReqs[backend] += 1
@@ -205,8 +156,7 @@ func updateStats(lbP *LBProxy, executionReport function.ExecutionReport, backend
 		lbP.newStats.Completions += 1
 		lbP.newStats.RespTime += executionReport.ResponseTime
 		lbP.newStats.Cost += executionReport.CostCloud
-		// TODO: Vedere come prendere l'utility (probabilmente va ritornata nel report)
-		lbP.newStats.RawUtility += 1
+		lbP.newStats.RawUtility += executionReport.Utility
 	}
 }
 
