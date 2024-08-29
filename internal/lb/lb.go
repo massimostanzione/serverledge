@@ -167,6 +167,8 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	lbProxy.oldStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
 	lbProxy.newStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
 
+	initServersAndWeights(lbProxy)
+
 	e := echo.New()
 	e.HideBanner = true
 	e.Any("/*", lbProxy.HandleRequest)

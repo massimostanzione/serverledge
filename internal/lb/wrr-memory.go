@@ -12,6 +12,10 @@ import (
 	"github.com/grussorusso/serverledge/internal/registration"
 )
 
+var servers []Server
+var weights []int
+var totalWeight int
+
 // WRRMemoryPolicy: è un load balancer che utilizza la politica wrr-memory
 type WRRMemoryPolicy struct {
 	mu            sync.Mutex
@@ -25,6 +29,7 @@ type WRRMemoryPolicy struct {
 }
 
 // NewWRRMemoryPolicy: crea un nuovo load balancer wrr-memory
+/*
 func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 
 	log.Println(LB, "WRRMemoryPolicy created")
@@ -58,6 +63,23 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 	}
 
 	log.Println(LB, "WRRMemoryPolicy initialized")
+
+	// Ritorno della struttura inizializzata
+	return &WRRMemoryPolicy{
+		lbProxy:       lbProxy,
+		servers:       servers,
+		weights:       weights,
+		totalWeight:   totalWeight,
+		index:         0,
+		requestCounts: make([]int, len(servers)),
+		totalReqs:     0,
+	}
+}
+*/
+
+func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
+
+	log.Println(LB, "WRRMemoryPolicy created")
 
 	// Ritorno della struttura inizializzata
 	return &WRRMemoryPolicy{
@@ -124,4 +146,42 @@ func getMemory(target *url.URL) int {
 	}
 
 	return 1
+}
+
+// Fix problema richieste HTTP
+func initServersAndWeights(lbProxy *LBProxy) {
+
+	log.Println(LB, "WRRMemoryPolicy Init")
+
+	// Recupero le memorie dei nodi cloud
+	memories := make([]int, len(lbProxy.targets))
+	for i, target := range lbProxy.targets {
+		memories[i] = getMemory(target)
+	}
+
+	log.Println(LB, "Memories:", memories)
+
+	// Determino la memoria minima tra i server
+	minMem := memories[0]
+	for _, value := range memories[1:] {
+		if value < minMem {
+			minMem = value
+		}
+	}
+
+	// Calcolo i pesi di ciascun server
+	servers = make([]Server, len(lbProxy.targets))
+	weights = make([]int, len(lbProxy.targets))
+	totalWeight = 0
+	for i, target := range lbProxy.targets {
+		weight := MULT_FACTOR * int(memories[i]/minMem)
+		if weight < 1 {
+			weight = 1
+		}
+		weights[i] = weight
+		totalWeight += weight
+		servers[i] = Server{target: target, weight: weight}
+	}
+
+	log.Println(LB, "Servers:", servers)
 }
