@@ -25,11 +25,11 @@ classes = [
 
 # Definizione delle funzioni e dei tassi di arrivo
 functions = [
-    {"name": "f1", "rate": 5, "duration_mean": 0.4},
-    {"name": "f2", "rate": 13, "duration_mean": 0.2},
-    {"name": "f3", "rate": 39, "duration_mean": 0.3},
-    {"name": "f4", "rate": 3, "duration_mean": 0.25},
-    {"name": "f5", "rate": 11, "duration_mean": 0.45}
+    {"name": "f1", "rate": 5, "param": 8100},
+    {"name": "f2", "rate": 13, "param": 6000},
+    {"name": "f3", "rate": 39, "param": 7200},
+    {"name": "f4", "rate": 3, "param": 6550},
+    {"name": "f5", "rate": 11, "param": 8500}
 ]
 
 # Calcolo della distribuzione cumulativa per la selezione ponderata delle classi
@@ -57,7 +57,7 @@ class ArrivalGenerator(threading.Thread):
         for arrival_time in arrivals:
             class_name = select_class()
             #print(f"Function: {self.function['name']}, Arrival Time: {arrival_time:.4f}, Class: {class_name}")
-            func_to_list[self.function['name']].append((arrival_time, self.function['name'], self.function['duration_mean'], class_name))
+            func_to_list[self.function['name']].append((arrival_time, self.function['name'], self.function['param'], class_name))
 
 # Durata per la simulazione (ad esempio 10 secondi)
 duration = 0.1
@@ -82,8 +82,8 @@ for key in func_to_list.keys():
 complete_list.sort(key=lambda x: x[0])
 
 # Funzione che verrà eseguita dal thread per stampare il nome della funzione
-def invoke_function(function_name, duration_mean, class_name):
-    command = f"bin/serverledge-cli invoke -H {IP} -P {PORT} -f {function_name} -c \"{class_name}\" -p \"n:{duration_mean}\""
+def invoke_function(function_name, param, class_name):
+    command = f"bin/serverledge-cli invoke -H {IP} -P {PORT} -f {function_name} -c \"{class_name}\" -p \"n:{param}\""
     # Esegui il comando
     os.system(command)
 
@@ -91,7 +91,7 @@ def invoke_function(function_name, duration_mean, class_name):
 start_time = 0.0
 
 # Iterare sulla lista degli arrivi
-for i, (arrival_time, function_name, duration_mean, class_name) in enumerate(complete_list):
+for i, (arrival_time, function_name, param, class_name) in enumerate(complete_list):
     if i == 0:
         delay = arrival_time - start_time
     else:
@@ -100,4 +100,4 @@ for i, (arrival_time, function_name, duration_mean, class_name) in enumerate(com
     time.sleep(delay)
 
     # Creare e avviare un thread per stampare il nome della funzione
-    threading.Thread(target=invoke_function, args=(function_name, duration_mean, class_name)).start()
+    threading.Thread(target=invoke_function, args=(function_name, param, class_name)).start()
