@@ -60,7 +60,7 @@ class ArrivalGenerator(threading.Thread):
             func_to_list[self.function['name']].append((arrival_time, self.function['name'], self.function['param'], class_name))
 
 # Durata per la simulazione (ad esempio 10 secondi)
-duration = 0.1
+duration = 5
 
 # Creazione e avvio dei thread per ogni funzione
 threads = []
