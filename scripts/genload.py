@@ -7,6 +7,9 @@ import os
 IP = "192.168.122.21"
 PORT = 1324
 
+# Durata per la simulazione (ad esempio 10 secondi)
+duration = 3600
+
 # Impostare il seed per generare la stessa sequenza ogni volta
 seed_value = 12345
 np.random.seed(seed_value)
@@ -58,9 +61,6 @@ class ArrivalGenerator(threading.Thread):
             class_name = select_class()
             #print(f"Function: {self.function['name']}, Arrival Time: {arrival_time:.4f}, Class: {class_name}")
             func_to_list[self.function['name']].append((arrival_time, self.function['name'], self.function['param'], class_name))
-
-# Durata per la simulazione (ad esempio 10 secondi)
-duration = 60
 
 # Creazione e avvio dei thread per ogni funzione
 threads = []
