@@ -118,7 +118,7 @@ func getMemory(target *url.URL) int {
 			log.Fatalf("%s Error decoding JSON: %v", LB, err)
 		}
 
-		return int(statusInfo.AvailableMemMB)
+		return int(statusInfo.MaxMemMB)
 	}
 
 	return 1
