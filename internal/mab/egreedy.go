@@ -38,8 +38,8 @@ func (eg *EpsilonGreedy) Update(newStats, oldStats Stats) {
 	policy := newStats.LBPolicy
 	reward := CalculateReward(eg.rewardConfig, newStats, oldStats)
 
-	log.Println(lbcommon.MAB, "New stats", newStats)
-	log.Println(lbcommon.MAB, "Old stats", oldStats)
+	//log.Println(lbcommon.MAB, "New stats", newStats)
+	//log.Println(lbcommon.MAB, "Old stats", oldStats)
 
 	// Update the plays count
 	if _, exists := eg.plays[policy]; !exists {
