@@ -6,9 +6,27 @@
     "completedPercentage": 0
   },
   {
-    "name": "premium",
+    "name": "standard",
+    "utility": 0.01,
+    "maximumResponseTime": 0.500,
+    "completedPercentage": 0
+  },
+  {
+    "name": "critical-1",
     "utility": 1.0,
-    "maximumResponseTime": 0.1,
-    "completedPercentage": 0.9
+    "maximumResponseTime": 0.500,
+    "completedPercentage": 0
+  },
+  {
+    "name": "critical-2",
+    "utility": 1.0,
+    "maximumResponseTime": 0.500,
+    "completedPercentage": 0
+  },
+  {
+    "name": "batch",
+    "utility": 1.0,
+    "maximumResponseTime": 100.0,
+    "completedPercentage": 0
   }
 ]
