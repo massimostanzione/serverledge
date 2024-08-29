@@ -8,7 +8,7 @@ func GetAllPolicies() []Policy {
 		//MAMA,
 		//CONST_HASH,
 		//WRRSpeedup,
-		//WRRMemory,
+		WRRMemory,
 		//WRRCost,
 	}
 }
