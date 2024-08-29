@@ -29,7 +29,6 @@ type WRRMemoryPolicy struct {
 }
 
 // NewWRRMemoryPolicy: crea un nuovo load balancer wrr-memory
-/*
 func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 
 	log.Println(LB, "WRRMemoryPolicy created")
@@ -75,8 +74,8 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 		totalReqs:     0,
 	}
 }
-*/
 
+/*
 func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 
 	log.Println(LB, "WRRMemoryPolicy created")
@@ -92,6 +91,7 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 		totalReqs:     0,
 	}
 }
+*/
 
 // SelectTarget: seleziona il prossimo target utilizzando la politica wrr-memory
 func (r *WRRMemoryPolicy) SelectTarget(funName string) *url.URL {
