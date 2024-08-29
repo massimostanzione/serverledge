@@ -57,6 +57,8 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 		servers[i] = Server{target: target, weight: weight}
 	}
 
+	log.Println(LB, "WRRMemoryPolicy initialized")
+
 	// Ritorno della struttura inizializzata
 	return &WRRMemoryPolicy{
 		lbProxy:       lbProxy,
