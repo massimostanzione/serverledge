@@ -84,6 +84,7 @@ func (p *DefaultLocalPolicy) OnArrival(r *scheduledRequest) {
 		// pass
 	} else {
 		// other error
+		log.Println("Request dropped else")
 		dropRequest(r)
 		return
 	}
@@ -98,5 +99,6 @@ func (p *DefaultLocalPolicy) OnArrival(r *scheduledRequest) {
 		}
 	}
 
+	log.Println("Request dropped no else")
 	dropRequest(r)
 }

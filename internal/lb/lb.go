@@ -112,6 +112,7 @@ func (lbP *LBProxy) HandleRequest(c echo.Context) error {
 
 	if strings.HasPrefix(c.Request().RequestURI, "/invoke/") {
 		// Check the status code
+		log.Println(LB, "invoke")
 		if resp.StatusCode == http.StatusOK {
 
 			var executionReport function.ExecutionReport
@@ -127,11 +128,14 @@ func (lbP *LBProxy) HandleRequest(c echo.Context) error {
 			updateStats(lbP, executionReport, backend.String(), false)
 			rwLock.Unlock()
 		} else {
+			log.Println(LB, "invoke dropped")
 			// Update statistics
 			rwLock.Lock()
 			updateStats(lbP, function.ExecutionReport{}, backend.String(), true)
 			rwLock.Unlock()
 		}
+	} else {
+		log.Println(LB, "Another request")
 	}
 
 	// Copia degli header della risposta
