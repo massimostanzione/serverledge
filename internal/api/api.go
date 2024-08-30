@@ -226,7 +226,7 @@ func GetServerStatus(c echo.Context) error {
 	}
 	response := registration.StatusInformation{
 		Addresses:               nodeInterface,
-		AvailableWarmContainers: make(map[string]int),
+		AvailableWarmContainers: node.WarmStatus(),
 		AvailableMemMB:          node.Resources.AvailableMemMB,
 		AvailableCPUs:           node.Resources.AvailableCPUs,
 		MaxMemMB:                node.Resources.MaxMemMB,
