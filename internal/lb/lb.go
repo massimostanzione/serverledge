@@ -164,7 +164,9 @@ func StartReverseProxy(r *registration.Registry, region string) {
 
 	// Inizializza il proxy con la politica di default (random)
 	lbProxy := &LBProxy{}
+	log.Println("1")
 	lbProxy.targetsInfo.targets = targets
+	log.Println("2")
 	updateTargetsInfo(lbProxy, targets)
 	lbProxy.lbPolicyName = lbcommon.Random
 	lbProxy.lbPolicy = getLBPolicy(lbProxy.lbPolicyName, lbProxy)
