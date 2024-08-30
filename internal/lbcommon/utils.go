@@ -6,7 +6,7 @@ func GetAllPolicies() []Policy {
 		Random,
 		RoundRobin,
 		MAMA,
-		CONST_HASH,
+		//CONST_HASH,
 		//WRRSpeedup,
 		WRRMemory,
 		WRRCost,
