@@ -201,7 +201,7 @@ func StartReverseProxy(r *registration.Registry, region string) {
 // it updates the targets in the LBProxy while holding a write lock to ensure thread-safe access.
 func updateTargets(lbProxy *LBProxy, region string) {
 	for {
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
 		targets, err := getTargets(region)
 		if err != nil {
 			log.Fatalf("%s Cannot connect to registry to retrieve targets: %v", LB, err)
