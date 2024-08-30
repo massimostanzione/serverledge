@@ -29,25 +29,27 @@ func NewMAMAPolicy(lbProxy *LBProxy) *MAMAPolicy {
 func (r *MAMAPolicy) SelectTarget(funName string) *url.URL {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	nodes := r.lbProxy.targets
+	nodes := r.lbProxy.targetsInfo.targets
 	if len(nodes) == 0 {
 		return nil
 	}
 
-	// Retrieve status information for all nodes
-	var nodesStatus []*registration.StatusInformation
-	for _, node := range nodes {
-		statusInfo := getNodeStatus(node)
-		if statusInfo != nil {
-			nodesStatus = append(nodesStatus, statusInfo)
-		} else {
-			return nil
+	/*
+		// Retrieve status information for all nodes
+		var nodesStatus []*registration.StatusInformation
+		for _, node := range nodes {
+			statusInfo := getNodeStatus(node)
+			if statusInfo != nil {
+				nodesStatus = append(nodesStatus, statusInfo)
+			} else {
+				return nil
+			}
 		}
-	}
+	*/
 
 	// Filter nodes with warm containers
 	var nodesWarm []*registration.StatusInformation
-	for _, nodeStatus := range nodesStatus {
+	for _, nodeStatus := range r.lbProxy.targetsInfo.targetsStatus {
 		if count, ok := nodeStatus.AvailableWarmContainers[funName]; ok && count > 0 {
 			nodesWarm = append(nodesWarm, nodeStatus)
 		}
@@ -55,7 +57,7 @@ func (r *MAMAPolicy) SelectTarget(funName string) *url.URL {
 
 	var selectedNode *registration.StatusInformation
 	if len(nodesWarm) == 0 { // No warm containers available (cold start)
-		selectedNode = getNodeWithMaxAvailableMem(nodesStatus)
+		selectedNode = getNodeWithMaxAvailableMem(r.lbProxy.targetsInfo.targetsStatus)
 	} else { // Warm containers available (warm start)
 		selectedNode = getNodeWithMaxAvailableMem(nodesWarm)
 	}

@@ -29,7 +29,7 @@ classes = [
 # Definizione delle funzioni e dei tassi di arrivo
 functions = [
     {"name": "f1", "rate": 1, "param": 8100},
-    {"name": "f2", "rate": 6, "param": 6000},
+    {"name": "f2", "rate": 4, "param": 6000},
     {"name": "f3", "rate": 8, "param": 7200},
     {"name": "f4", "rate": 2, "param": 6550},
     {"name": "f5", "rate": 3, "param": 8500}

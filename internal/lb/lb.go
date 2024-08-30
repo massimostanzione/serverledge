@@ -69,7 +69,7 @@ func (lbP *LBProxy) UpdateLBPolicy(lbPolicy LBPolicy) {
 // UpdateTargets sets the list of backend targets for the LBProxy.
 // It updates the internal target list with the provided slice of URLs.
 func (lbP *LBProxy) UpdateTargets(targets []*url.URL) {
-	lbP.targets = targets
+	lbP.targetsInfo.targets = targets
 }
 
 // SelectBackend selects and returns a backend target URL based on the current load balancing policy.
@@ -164,11 +164,12 @@ func StartReverseProxy(r *registration.Registry, region string) {
 
 	// Inizializza il proxy con la politica di default (random)
 	lbProxy := &LBProxy{}
-	lbProxy.targets = targets
+	lbProxy.targetsInfo.targets = targets
+	updateTargetsInfo(lbProxy, targets)
 	lbProxy.lbPolicyName = lbcommon.Random
 	lbProxy.lbPolicy = getLBPolicy(lbProxy.lbPolicyName, lbProxy)
-	lbProxy.oldStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
-	lbProxy.newStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
+	lbProxy.oldStats = newStats(lbProxy.lbPolicyName, lbProxy.targetsInfo.targets)
+	lbProxy.newStats = newStats(lbProxy.lbPolicyName, lbProxy.targetsInfo.targets)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -176,7 +177,7 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	registerTerminationHandler(r, e)
 
 	// Start the goroutine that periodically retrieves the available targets
-	//go updateTargets(lbProxy, region)
+	go updateTargets(lbProxy, region)
 
 	// If enabled in the configuration file, start the MAB agent goroutine
 	isMabAgentEnabled := config.GetBool(config.MAB_AGENT_ENABLED, false)
@@ -199,20 +200,62 @@ func StartReverseProxy(r *registration.Registry, region string) {
 // it updates the targets in the LBProxy while holding a write lock to ensure thread-safe access.
 func updateTargets(lbProxy *LBProxy, region string) {
 	for {
-		time.Sleep(30 * time.Second)
+		time.Sleep(2 * time.Second)
 		targets, err := getTargets(region)
 		if err != nil {
 			log.Fatalf("%s Cannot connect to registry to retrieve targets: %v", LB, err)
 		}
-		if compareURLTargets(lbProxy.targets, targets) {
-			//log.Println(LB, "No update of targets necessary")
-		} else {
+		if !compareURLTargets(lbProxy.targetsInfo.targets, targets) {
 			rwLock.Lock()
 			lbProxy.UpdateTargets(targets)
-			log.Println(LB, "Targets updated:", lbProxy.targets)
+			updateTargetsInfo(lbProxy, targets)
+			rwLock.Unlock()
+		} else {
+			rwLock.Lock()
+			updateTargetsInfo(lbProxy, targets)
 			rwLock.Unlock()
 		}
 	}
+}
+
+func updateTargetsInfo(lbP *LBProxy, targets []*url.URL) {
+	// Retrieve status information for all nodes
+	var targetsStatus []*registration.StatusInformation
+	for _, node := range targets {
+		statusInfo := getTargetStatus(node)
+		if statusInfo != nil {
+			targetsStatus = append(targetsStatus, statusInfo)
+		} else {
+			log.Fatalf("%s Error while getting status information", LB)
+		}
+	}
+	lbP.targetsInfo.targetsStatus = append(lbP.targetsInfo.targetsStatus, targetsStatus...)
+}
+
+// Helper function to retrieve node status information via HTTP
+func getTargetStatus(node *url.URL) *registration.StatusInformation {
+	resp, err := http.Get(node.String() + "/status")
+	if err != nil {
+		log.Fatalf("%s Invocation to get status failed: %v", LB, err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("%s Error reading response body: %v", LB, err)
+	}
+
+	// Check the status code
+	if resp.StatusCode == http.StatusOK {
+		var statusInfo registration.StatusInformation
+		if err := json.Unmarshal(body, &statusInfo); err != nil {
+			log.Fatalf("%s Error decoding JSON: %v", LB, err)
+		}
+		return &statusInfo
+	}
+
+	return nil
 }
 
 // startMABAgent initializes and continuously runs a Multi-Armed Bandit (MAB) agent

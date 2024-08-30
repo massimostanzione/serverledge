@@ -5,12 +5,18 @@ import (
 
 	"github.com/grussorusso/serverledge/internal/lbcommon"
 	"github.com/grussorusso/serverledge/internal/mab"
+	"github.com/grussorusso/serverledge/internal/registration"
 )
 
 const LB = "[LB]:"
 
+type TargetsInfo struct {
+	targets       []*url.URL
+	targetsStatus []*registration.StatusInformation
+}
+
 type LBProxy struct {
-	targets      []*url.URL
+	targetsInfo  *TargetsInfo
 	lbPolicyName lbcommon.Policy
 	lbPolicy     LBPolicy
 	oldStats     *mab.Stats

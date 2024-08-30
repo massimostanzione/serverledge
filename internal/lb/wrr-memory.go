@@ -34,8 +34,8 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 	log.Println(LB, "WRRMemoryPolicy created")
 
 	// Recupero le memorie dei nodi cloud
-	memories := make([]int, len(lbProxy.targets))
-	for i, target := range lbProxy.targets {
+	memories := make([]int, len(lbProxy.targetsInfo.targets))
+	for i, target := range lbProxy.targetsInfo.targets {
 		memories[i] = getMemory(target)
 	}
 
@@ -48,10 +48,10 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 	}
 
 	// Calcolo i pesi di ciascun server
-	servers := make([]Server, len(lbProxy.targets))
+	servers := make([]Server, len(lbProxy.targetsInfo.targets))
 	totalWeight := 0
-	weights := make([]int, len(lbProxy.targets))
-	for i, target := range lbProxy.targets {
+	weights := make([]int, len(lbProxy.targetsInfo.targets))
+	for i, target := range lbProxy.targetsInfo.targets {
 		weight := MULT_FACTOR * int(memories[i]/minMem)
 		if weight < 1 {
 			weight = 1

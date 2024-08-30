@@ -26,7 +26,7 @@ func NewRoundRobinPolicy(lbProxy *LBProxy) *RoundRobinPolicy {
 func (r *RoundRobinPolicy) SelectTarget(funName string) *url.URL {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	nodes := r.lbProxy.targets
+	nodes := r.lbProxy.targetsInfo.targets
 	if len(nodes) == 0 {
 		return nil
 	}

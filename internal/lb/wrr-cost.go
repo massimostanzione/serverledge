@@ -30,8 +30,8 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 	log.Println(LB, "WRRCostPolicy created")
 
 	// Recupero il costo dei nodi cloud
-	costs := make([]float64, len(lbProxy.targets))
-	for i, target := range lbProxy.targets {
+	costs := make([]float64, len(lbProxy.targetsInfo.targets))
+	for i, target := range lbProxy.targetsInfo.targets {
 		costs[i] = getCost(target)
 	}
 
@@ -44,10 +44,10 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 	}
 
 	// Calcolo i pesi di ciascun server
-	servers := make([]Server, len(lbProxy.targets))
+	servers := make([]Server, len(lbProxy.targetsInfo.targets))
 	totalWeight := 0
-	weights := make([]int, len(lbProxy.targets))
-	for i, target := range lbProxy.targets {
+	weights := make([]int, len(lbProxy.targetsInfo.targets))
+	for i, target := range lbProxy.targetsInfo.targets {
 		weight := MULT_FACTOR * int(maxCost/costs[i])
 		if weight < 1 {
 			weight = 1

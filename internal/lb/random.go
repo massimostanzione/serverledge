@@ -21,7 +21,7 @@ func NewRandomPolicy(lbProxy *LBProxy) *RandomPolicy {
 
 // SelectTarget: seleziona
 func (r *RandomPolicy) SelectTarget(funName string) *url.URL {
-	nodes := r.lbProxy.targets
+	nodes := r.lbProxy.targetsInfo.targets
 	if len(nodes) == 0 {
 		return nil
 	}

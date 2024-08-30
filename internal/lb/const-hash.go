@@ -1,5 +1,6 @@
 package lb
 
+/*
 import (
 	"context"
 	"crypto/sha256"
@@ -174,3 +175,4 @@ func getNodesStatusInfo(node *url.URL) *registration.StatusInformation {
 
 	return nil
 }
+*/
