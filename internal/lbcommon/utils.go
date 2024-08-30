@@ -4,11 +4,11 @@ package lbcommon
 func GetAllPolicies() []Policy {
 	return []Policy{
 		//Random,
-		RoundRobin,
+		//RoundRobin,
 		//MAMA,
 		//CONST_HASH,
 		//WRRSpeedup,
 		//WRRMemory,
-		//WRRCost,
+		WRRCost,
 	}
 }
