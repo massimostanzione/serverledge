@@ -57,7 +57,7 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 		servers[i] = Server{target: target, weight: weight}
 	}
 
-	log.Println(LB, "WRRCostPolicy end")
+	//log.Println(LB, "WRRCostPolicy end")
 
 	// Ritorno della struttura inizializzata
 	return &WRRCostPolicy{

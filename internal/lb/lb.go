@@ -24,6 +24,10 @@ import (
 
 var rwLock sync.RWMutex // rwLock is used to control concurrent access to a shared LBProxy data structure
 
+// httpClient is a global HTTP client that can be reused for all requests.
+// It is safe for concurrent use by multiple goroutines.
+var client = &http.Client{}
+
 // registerTerminationHandler sets up a signal handler to gracefully terminate the server
 // when an interrupt signal (e.g., SIGINT) is received. It deregisters the server from the
 // registration service (e.g., etcd), shuts down the Echo server with a 10-second timeout,
@@ -87,66 +91,61 @@ func (lbP *LBProxy) HandleRequest(c echo.Context) error {
 	funName := strings.TrimPrefix(c.Request().RequestURI, "/invoke/")
 	backend := lbP.SelectBackend(funName)
 
-	// Creazione client HTTP per l'inoltro della richiesta al backend
-	client := &http.Client{}
-	// Creazione della nuova richiesta
+	// Create a new HTTP request to forward to the selected backend
 	req, err := http.NewRequest(c.Request().Method, backend.String()+c.Request().RequestURI, c.Request().Body)
 	if err != nil {
 		return err
 	}
-	// Copia degli header della richiesta
+	// Copy the request headers to the new request
 	req.Header = c.Request().Header
 
-	// Invio della richiesta al backend
+	// Send the request to the backend using the global HTTP client
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
+	// Read the response body from the backend
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalf("%s Error reading response body: %v", LB, err)
 	}
 
+	// If the request is an "invoke" request, process the response further
 	if strings.HasPrefix(c.Request().RequestURI, "/invoke/") {
-		// Check the status code
-		//log.Println(LB, "invoke")
+		// Check if the response status code is OK
 		if resp.StatusCode == http.StatusOK {
 
 			var executionReport function.ExecutionReport
 
-			// Decode the JSON into a ExecutionReport structure
+			// Decode the JSON response body into an ExecutionReport structure
 			err = json.Unmarshal(body, &executionReport)
 			if err != nil {
 				log.Fatalf("%s Error decoding JSON: %v", LB, err)
 			}
 
-			// Update statistics
+			// Update statistics with the execution report
 			rwLock.Lock()
 			updateStats(lbP, executionReport, backend.String(), false)
 			rwLock.Unlock()
 		} else {
-			//log.Println(LB, "invoke dropped")
-			// Update statistics
+			// Update statistics to indicate a failed request
 			rwLock.Lock()
 			updateStats(lbP, function.ExecutionReport{}, backend.String(), true)
 			rwLock.Unlock()
 		}
-	} else {
-		//log.Println(LB, "Another request")
 	}
 
-	// Copia degli header della risposta
+	// Copy the response headers from the backend to the client response
 	for k, v := range resp.Header {
 		c.Response().Header().Set(k, v[0])
 	}
 
-	// Impostazione del codice di stato della risposta
+	// Set the response status code
 	c.Response().WriteHeader(resp.StatusCode)
 
-	// Copia del corpo della risposta e invio al client
+	// Copy the response body and send it to the client
 	_, err = c.Response().Writer.Write(body)
 	return err
 }
@@ -166,12 +165,10 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	// Inizializza il proxy con la politica di default (random)
 	lbProxy := &LBProxy{}
 	lbProxy.targets = targets
-	lbProxy.lbPolicyName = lbcommon.WRRCost
+	lbProxy.lbPolicyName = lbcommon.Random
 	lbProxy.lbPolicy = getLBPolicy(lbProxy.lbPolicyName, lbProxy)
 	lbProxy.oldStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
 	lbProxy.newStats = newStats(lbProxy.lbPolicyName, lbProxy.targets)
-
-	//initServersAndWeights(lbProxy)
 
 	e := echo.New()
 	e.HideBanner = true

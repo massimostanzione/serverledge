@@ -10,7 +10,6 @@ import (
 const LB = "[LB]:"
 
 type LBProxy struct {
-	//mu           sync.RWMutex
 	targets      []*url.URL
 	lbPolicyName lbcommon.Policy
 	lbPolicy     LBPolicy
