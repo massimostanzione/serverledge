@@ -107,10 +107,10 @@ func getLBPolicy(p lbcommon.Policy, lbProxy *LBProxy) LBPolicy {
 	case lbcommon.WRRCost:
 		lbProxy.lbPolicyName = lbcommon.WRRCost
 		return NewWRRCostPolicy(lbProxy)
+	case lbcommon.CONST_HASH:
+		lbProxy.lbPolicyName = lbcommon.CONST_HASH
+		return NewConstHashPolicy(lbProxy)
 	/*
-		case lbcommon.CONST_HASH:
-			lbProxy.lbPolicyName = lbcommon.CONST_HASH
-			return NewConstHashPolicy(lbProxy)
 		case lbcommon.WRRSpeedup:
 			lbProxy.lbPolicyName = lbcommon.WRRSpeedup
 			return NewWRRSpeedupPolicy(targets)

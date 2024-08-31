@@ -1,7 +1,7 @@
 #!/bin/sh
 #!/bin/sh
 
-HOST=192.168.122.21
+HOST=192.168.122.22
 PORT=1324
 
 bin/serverledge-cli create -H $HOST -P $PORT -f f1 --memory 512 --src examples/fibonacciNout.py --runtime python310 --handler "fibonacciNout.handler"

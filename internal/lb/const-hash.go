@@ -1,6 +1,5 @@
 package lb
 
-/*
 import (
 	"context"
 	"crypto/sha256"
@@ -39,9 +38,9 @@ type Ring struct {
 func NewConstHashPolicy(lbProxy *LBProxy) *ConstHashPolicy {
 	log.Println(LB, "ConstHashPolicy created")
 	ring := &Ring{
-		nodes: lbProxy.targets,
+		nodes: lbProxy.targetsInfo.targets,
 	}
-	for _, node := range lbProxy.targets {
+	for _, node := range lbProxy.targetsInfo.targets {
 		ring.AddNode(node)
 	}
 	return &ConstHashPolicy{
@@ -175,4 +174,3 @@ func getNodesStatusInfo(node *url.URL) *registration.StatusInformation {
 
 	return nil
 }
-*/
