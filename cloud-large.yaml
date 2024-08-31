@@ -2,6 +2,6 @@ api.port: 1323
 etcd.address: "192.168.122.21:2379"
 container.pool.memory: 7168
 cloud: true
-cloud.cost: 0.0005
+cloud.cost: 0.00005
 scheduler.queue.capacity: 0
 metrics.enabled: false

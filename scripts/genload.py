@@ -7,8 +7,8 @@ import os
 IP = "192.168.122.21"
 PORT = 1324
 
-# Durata per la simulazione (ad esempio 10 secondi)
-duration = 3600
+# Durata della simulazione (in secondi)
+duration = 7320 # (2 ore e 2 minuti)
 
 # Impostare il seed per generare la stessa sequenza ogni volta
 seed_value = 12345
