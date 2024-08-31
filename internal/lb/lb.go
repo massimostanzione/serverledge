@@ -166,7 +166,6 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	lbProxy := &LBProxy{}
 	lbProxy.targetsInfo = &TargetsInfo{}
 	lbProxy.targetsInfo.targets = targets
-	updateTargetsInfo(lbProxy, targets)
 	lbProxy.lbPolicyName = lbcommon.Random
 	lbProxy.lbPolicy = getLBPolicy(lbProxy.lbPolicyName, lbProxy)
 	lbProxy.oldStats = newStats(lbProxy.lbPolicyName, lbProxy.targetsInfo.targets)
@@ -178,7 +177,10 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	registerTerminationHandler(r, e)
 
 	// Start the goroutine that periodically retrieves the available targets
-	go updateTargets(lbProxy, region)
+	//go updateTargets(lbProxy, region)
+
+	// Start the goroutine that periodically retrieves the available targets
+	go updateTargetsInfo(lbProxy, targets)
 
 	// If enabled in the configuration file, start the MAB agent goroutine
 	isMabAgentEnabled := config.GetBool(config.MAB_AGENT_ENABLED, false)
@@ -201,7 +203,7 @@ func StartReverseProxy(r *registration.Registry, region string) {
 // it updates the targets in the LBProxy while holding a write lock to ensure thread-safe access.
 func updateTargets(lbProxy *LBProxy, region string) {
 	for {
-		time.Sleep(3 * time.Second)
+		time.Sleep(30 * time.Second)
 		targets, err := getTargets(region)
 		if err != nil {
 			log.Fatalf("%s Cannot connect to registry to retrieve targets: %v", LB, err)
@@ -219,18 +221,24 @@ func updateTargets(lbProxy *LBProxy, region string) {
 	}
 }
 
+// updateTargetsInfo periodically retrieves the status information of all target nodes
+// and updates the load balancer proxy's targets information.
+// If any status retrieval fails, the function logs a fatal error and terminates the program.
 func updateTargetsInfo(lbP *LBProxy, targets []*url.URL) {
-	// Retrieve status information for all nodes
-	var targetsStatus []*registration.StatusInformation
-	for _, node := range targets {
-		statusInfo := getTargetStatus(node)
-		if statusInfo != nil {
-			targetsStatus = append(targetsStatus, statusInfo)
-		} else {
-			log.Fatalf("%s Error while getting status information", LB)
+	for {
+		time.Sleep(3 * time.Second)
+		// Retrieve status information for all nodes
+		var targetsStatus []*registration.StatusInformation
+		for _, node := range targets {
+			statusInfo := getTargetStatus(node)
+			if statusInfo != nil {
+				targetsStatus = append(targetsStatus, statusInfo)
+			} else {
+				log.Fatalf("%s Error while getting status information", LB)
+			}
 		}
+		lbP.targetsInfo.targetsStatus = append(lbP.targetsInfo.targetsStatus, targetsStatus...)
 	}
-	lbP.targetsInfo.targetsStatus = append(lbP.targetsInfo.targetsStatus, targetsStatus...)
 }
 
 // Helper function to retrieve node status information via HTTP

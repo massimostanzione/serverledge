@@ -5,9 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"sort"
 	"sync"
@@ -57,7 +55,7 @@ func (r *ConstHashPolicy) SelectTarget(funName string) *url.URL {
 	if !ok {
 		log.Fatalf("%s Dropping request for unknown fun '%s'", LB, funName)
 	}
-	node := r.ring.GetNode(fun)
+	node := r.ring.GetNode(r.lbProxy, fun)
 	return node
 }
 
@@ -111,7 +109,7 @@ func (r *Ring) AddNode(node *url.URL) {
 }
 
 // Finds the closest node based on the function
-func (r *Ring) GetNode(fun *function.Function) *url.URL {
+func (r *Ring) GetNode(lbP *LBProxy, fun *function.Function) *url.URL {
 	key := hash(fun.Name)
 
 	// Find the index where the key should be inserted
@@ -126,7 +124,7 @@ func (r *Ring) GetNode(fun *function.Function) *url.URL {
 	// Retrieve status information for all nodes
 	nodesStatusInfo := make(map[*url.URL]*registration.StatusInformation)
 	for _, node := range r.nodes {
-		statusInfo := getNodesStatusInfo(node)
+		statusInfo := getNodesStatusInfo(lbP, node.String())
 		if statusInfo != nil {
 			nodesStatusInfo[node] = statusInfo
 		} else {
@@ -150,6 +148,7 @@ func (r *Ring) GetNode(fun *function.Function) *url.URL {
 }
 
 // Helper function to retrieve node status information via HTTP
+/*
 func getNodesStatusInfo(node *url.URL) *registration.StatusInformation {
 	resp, err := http.Get(node.String() + "/status")
 	if err != nil {
@@ -170,6 +169,17 @@ func getNodesStatusInfo(node *url.URL) *registration.StatusInformation {
 			log.Fatalf("%s Error decoding JSON: %v", LB, err)
 		}
 		return &statusInfo
+	}
+
+	return nil
+}
+*/
+
+func getNodesStatusInfo(lbP *LBProxy, node string) *registration.StatusInformation {
+	for _, targetStatus := range lbP.targetsInfo.targetsStatus {
+		if targetStatus.Addresses.NodeAddress == node {
+			return targetStatus
+		}
 	}
 
 	return nil

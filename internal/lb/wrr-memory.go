@@ -1,15 +1,9 @@
 package lb
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"sync"
-
-	"github.com/grussorusso/serverledge/internal/registration"
 )
 
 var servers []Server
@@ -36,7 +30,7 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 	// Recupero le memorie dei nodi cloud
 	memories := make([]int, len(lbProxy.targetsInfo.targets))
 	for i, target := range lbProxy.targetsInfo.targets {
-		memories[i] = getMemory(target)
+		memories[i] = getMemory(lbProxy, target.String())
 	}
 
 	// Determino la memoria minima tra i server
@@ -61,6 +55,8 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 		servers[i] = Server{target: target, weight: weight}
 	}
 
+	log.Println(LB, "Servers:", servers)
+
 	// Ritorno della struttura inizializzata
 	return &WRRMemoryPolicy{
 		lbProxy:       lbProxy,
@@ -74,30 +70,31 @@ func NewWRRMemoryPolicy(lbProxy *LBProxy) *WRRMemoryPolicy {
 }
 
 // SelectTarget: seleziona il prossimo target utilizzando la politica wrr-memory
-func (r *WRRMemoryPolicy) SelectTarget(funName string) *url.URL {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if len(r.servers) == 0 {
+func (p *WRRMemoryPolicy) SelectTarget(funName string) *url.URL {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if len(p.servers) == 0 {
 		return nil
 	}
 
 	for {
-		if r.totalReqs == r.totalWeight {
-			r.totalReqs = 0
-			r.requestCounts = make([]int, len(r.servers))
-			r.index = 0
+		if p.totalReqs == p.totalWeight {
+			p.totalReqs = 0
+			p.requestCounts = make([]int, len(p.servers))
+			p.index = 0
 		}
-		server := &r.servers[r.index]
-		if r.requestCounts[r.index] < server.weight {
-			r.requestCounts[r.index]++
-			r.totalReqs++
-			r.index = (r.index + 1) % len(r.servers)
+		server := &p.servers[p.index]
+		if p.requestCounts[p.index] < server.weight {
+			p.requestCounts[p.index]++
+			p.totalReqs++
+			p.index = (p.index + 1) % len(p.servers)
 			return server.target
 		}
-		r.index = (r.index + 1) % len(r.servers)
+		p.index = (p.index + 1) % len(p.servers)
 	}
 }
 
+/*
 func getMemory(target *url.URL) int {
 	url := fmt.Sprintf("http://%s/status", target.Host)
 	resp, err := http.Get(url)
@@ -126,4 +123,16 @@ func getMemory(target *url.URL) int {
 	}
 
 	return 1
+}
+*/
+
+func getMemory(lbP *LBProxy, target string) int {
+	memory := 1
+	for _, targetStatus := range lbP.targetsInfo.targetsStatus {
+		if targetStatus.Addresses.NodeAddress == target {
+			memory = int(targetStatus.MaxMemMB)
+			break
+		}
+	}
+	return memory
 }

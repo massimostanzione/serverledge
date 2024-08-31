@@ -1,15 +1,9 @@
 package lb
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
 	"sync"
-
-	"github.com/grussorusso/serverledge/internal/registration"
 )
 
 // WRRCostPolicy: è un load balancer che utilizza la politica wrr-cost
@@ -32,7 +26,7 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 	// Recupero il costo dei nodi cloud
 	costs := make([]float64, len(lbProxy.targetsInfo.targets))
 	for i, target := range lbProxy.targetsInfo.targets {
-		costs[i] = getCost(target)
+		costs[i] = getCost(lbProxy, target.String())
 	}
 
 	// Determino il costo massimo tra i server
@@ -57,7 +51,7 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 		servers[i] = Server{target: target, weight: weight}
 	}
 
-	//log.Println(LB, "WRRCostPolicy end")
+	log.Println(LB, "Servers:", servers)
 
 	// Ritorno della struttura inizializzata
 	return &WRRCostPolicy{
@@ -72,30 +66,31 @@ func NewWRRCostPolicy(lbProxy *LBProxy) *WRRCostPolicy {
 }
 
 // SelectTarget: seleziona il prossimo target utilizzando la politica wrr-cost
-func (r *WRRCostPolicy) SelectTarget(funName string) *url.URL {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	if len(r.servers) == 0 {
+func (p *WRRCostPolicy) SelectTarget(funName string) *url.URL {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if len(p.servers) == 0 {
 		return nil
 	}
 
 	for {
-		if r.totalReqs == r.totalWeight {
-			r.totalReqs = 0
-			r.requestCounts = make([]int, len(r.servers))
-			r.index = 0
+		if p.totalReqs == p.totalWeight {
+			p.totalReqs = 0
+			p.requestCounts = make([]int, len(p.servers))
+			p.index = 0
 		}
-		server := &r.servers[r.index]
-		if r.requestCounts[r.index] < server.weight {
-			r.requestCounts[r.index]++
-			r.totalReqs++
-			r.index = (r.index + 1) % len(r.servers)
+		server := &p.servers[p.index]
+		if p.requestCounts[p.index] < server.weight {
+			p.requestCounts[p.index]++
+			p.totalReqs++
+			p.index = (p.index + 1) % len(p.servers)
 			return server.target
 		}
-		r.index = (r.index + 1) % len(r.servers)
+		p.index = (p.index + 1) % len(p.servers)
 	}
 }
 
+/*
 func getCost(target *url.URL) float64 {
 	url := fmt.Sprintf("http://%s/status", target.Host)
 	resp, err := http.Get(url)
@@ -123,4 +118,16 @@ func getCost(target *url.URL) float64 {
 	}
 
 	return 1
+}
+*/
+
+func getCost(lbP *LBProxy, target string) float64 {
+	cost := 1.0
+	for _, targetStatus := range lbP.targetsInfo.targetsStatus {
+		if targetStatus.Addresses.NodeAddress == target {
+			cost = targetStatus.CostCloud
+			break
+		}
+	}
+	return cost
 }

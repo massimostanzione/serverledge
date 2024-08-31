@@ -26,10 +26,10 @@ func NewMAMAPolicy(lbProxy *LBProxy) *MAMAPolicy {
 }
 
 // SelectTarget: seleziona il prossimo target utilizzando la politica MAMA
-func (r *MAMAPolicy) SelectTarget(funName string) *url.URL {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	nodes := r.lbProxy.targetsInfo.targets
+func (p *MAMAPolicy) SelectTarget(funName string) *url.URL {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	nodes := p.lbProxy.targetsInfo.targets
 	if len(nodes) == 0 {
 		return nil
 	}
@@ -49,7 +49,7 @@ func (r *MAMAPolicy) SelectTarget(funName string) *url.URL {
 
 	// Filter nodes with warm containers
 	var nodesWarm []*registration.StatusInformation
-	for _, nodeStatus := range r.lbProxy.targetsInfo.targetsStatus {
+	for _, nodeStatus := range p.lbProxy.targetsInfo.targetsStatus {
 		if count, ok := nodeStatus.AvailableWarmContainers[funName]; ok && count > 0 {
 			nodesWarm = append(nodesWarm, nodeStatus)
 		}
@@ -57,7 +57,7 @@ func (r *MAMAPolicy) SelectTarget(funName string) *url.URL {
 
 	var selectedNode *registration.StatusInformation
 	if len(nodesWarm) == 0 { // No warm containers available (cold start)
-		selectedNode = getNodeWithMaxAvailableMem(r.lbProxy.targetsInfo.targetsStatus)
+		selectedNode = getNodeWithMaxAvailableMem(p.lbProxy.targetsInfo.targetsStatus)
 	} else { // Warm containers available (warm start)
 		selectedNode = getNodeWithMaxAvailableMem(nodesWarm)
 	}
