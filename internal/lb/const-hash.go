@@ -181,6 +181,5 @@ func getNodesStatusInfo(lbP *LBProxy, node string) *registration.StatusInformati
 			return targetStatus
 		}
 	}
-
 	return nil
 }
