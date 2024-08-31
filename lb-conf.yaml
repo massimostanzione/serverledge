@@ -1,4 +1,4 @@
-etcd.address: "192.168.1.245:2379"
+etcd.address: "192.168.122.21:2379"
 api.port: 1324
 storage.address: "http://localhost:8086"
 storage.token: "serverledge"
