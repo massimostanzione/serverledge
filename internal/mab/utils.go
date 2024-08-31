@@ -82,6 +82,8 @@ func populateInfluxMABStats(newStats, oldStats Stats, timestamp string, reward f
 		ServerLoadsCum: serverLoadsCum,
 		DroppedReqs:    droppedReqs,
 		DroppedReqsCum: droppedReqsCum,
+		Arrivals:       newStats.Arrivals - oldStats.Arrivals,
+		Completions:    newStats.Completions - oldStats.Completions,
 		AvgRespTime:    avgRespTime,
 		Cost:           newStats.Cost - oldStats.Cost,
 		Utility:        newStats.RawUtility - oldStats.RawUtility,

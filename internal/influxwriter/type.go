@@ -14,6 +14,8 @@ type InfluxMABStats struct {
 	ServerLoadsCum []int   // The cumulative number of requests received by each server up to this timestamp
 	DroppedReqs    []int   // The number of requests dropped by each server between the previous timestamp and this one
 	DroppedReqsCum []int   // The cumulative number of requests dropped by each server up to this timestamp
+	Arrivals       int     // The number of requests received between the previous timestamp and this one
+	Completions    int     // The number of requests completed between the previous timestamp and this one
 	AvgRespTime    float64 // The average response time between the previous timestamp and this one
 	Cost           float64 // The total cost incurred between the previous timestamp and this one
 	Utility        float64 // The total utility calculated between the previous timestamp and this one

@@ -180,7 +180,7 @@ func StartReverseProxy(r *registration.Registry, region string) {
 	//go updateTargets(lbProxy, region)
 
 	// Start the goroutine that periodically retrieves the available targets
-	go updateTargetsInfo(lbProxy, targets)
+	go updateTargetsInfo(lbProxy)
 
 	// If enabled in the configuration file, start the MAB agent goroutine
 	isMabAgentEnabled := config.GetBool(config.MAB_AGENT_ENABLED, false)
@@ -211,11 +211,11 @@ func updateTargets(lbProxy *LBProxy, region string) {
 		if !compareURLTargets(lbProxy.targetsInfo.targets, targets) {
 			rwLock.Lock()
 			lbProxy.UpdateTargets(targets)
-			updateTargetsInfo(lbProxy, targets)
+			updateTargetsInfo(lbProxy)
 			rwLock.Unlock()
 		} else {
 			rwLock.Lock()
-			updateTargetsInfo(lbProxy, targets)
+			updateTargetsInfo(lbProxy)
 			rwLock.Unlock()
 		}
 	}
@@ -224,13 +224,14 @@ func updateTargets(lbProxy *LBProxy, region string) {
 // updateTargetsInfo periodically retrieves the status information of all target nodes
 // and updates the load balancer proxy's targets information.
 // If any status retrieval fails, the function logs a fatal error and terminates the program.
-func updateTargetsInfo(lbP *LBProxy, targets []*url.URL) {
+func updateTargetsInfo(lbP *LBProxy) {
 	for {
 		time.Sleep(3 * time.Second)
 		// Retrieve status information for all nodes
+		rwLock.Lock()
 		var targetsStatus []*registration.StatusInformation
-		for _, node := range targets {
-			statusInfo := getTargetStatus(node)
+		for _, target := range lbP.targetsInfo.targets {
+			statusInfo := getTargetStatus(target)
 			if statusInfo != nil {
 				targetsStatus = append(targetsStatus, statusInfo)
 			} else {
@@ -238,12 +239,13 @@ func updateTargetsInfo(lbP *LBProxy, targets []*url.URL) {
 			}
 		}
 		lbP.targetsInfo.targetsStatus = append(lbP.targetsInfo.targetsStatus, targetsStatus...)
+		rwLock.Unlock()
 	}
 }
 
 // Helper function to retrieve node status information via HTTP
-func getTargetStatus(node *url.URL) *registration.StatusInformation {
-	resp, err := http.Get(node.String() + "/status")
+func getTargetStatus(target *url.URL) *registration.StatusInformation {
+	resp, err := http.Get(target.String() + "/status")
 	if err != nil {
 		log.Fatalf("%s Invocation to get status failed: %v", LB, err)
 	}
