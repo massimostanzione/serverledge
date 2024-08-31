@@ -2,7 +2,9 @@ package lb
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -85,6 +87,32 @@ func getTargets(region string) ([]*url.URL, error) {
 	// log.Printf("[LB]: found %d targets", len(targets))
 
 	return targets, nil
+}
+
+// Helper function to retrieve node status information via HTTP
+func getTargetStatus(target *url.URL) *registration.StatusInformation {
+	resp, err := http.Get(target.String() + "/status")
+	if err != nil {
+		log.Fatalf("%s Invocation to get status failed: %v", LB, err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("%s Error reading response body: %v", LB, err)
+	}
+
+	// Check the status code
+	if resp.StatusCode == http.StatusOK {
+		var statusInfo registration.StatusInformation
+		if err := json.Unmarshal(body, &statusInfo); err != nil {
+			log.Fatalf("%s Error decoding JSON: %v", LB, err)
+		}
+		return &statusInfo
+	}
+
+	return nil
 }
 
 // getLBPolicy selects and returns a load balancing policy based on the provided

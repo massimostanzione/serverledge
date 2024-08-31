@@ -243,32 +243,6 @@ func updateTargetsInfo(lbP *LBProxy) {
 	}
 }
 
-// Helper function to retrieve node status information via HTTP
-func getTargetStatus(target *url.URL) *registration.StatusInformation {
-	resp, err := http.Get(target.String() + "/status")
-	if err != nil {
-		log.Fatalf("%s Invocation to get status failed: %v", LB, err)
-	}
-	defer resp.Body.Close()
-
-	// Read the response body
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalf("%s Error reading response body: %v", LB, err)
-	}
-
-	// Check the status code
-	if resp.StatusCode == http.StatusOK {
-		var statusInfo registration.StatusInformation
-		if err := json.Unmarshal(body, &statusInfo); err != nil {
-			log.Fatalf("%s Error decoding JSON: %v", LB, err)
-		}
-		return &statusInfo
-	}
-
-	return nil
-}
-
 // startMABAgent initializes and continuously runs a Multi-Armed Bandit (MAB) agent
 // to periodically update load balancing policies based on the latest statistics.
 // The agent operates at intervals specified by the configuration. It acquires a
