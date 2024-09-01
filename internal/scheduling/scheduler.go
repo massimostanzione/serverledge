@@ -38,7 +38,7 @@ func Run(p Policy) {
 	node.Resources.MaxMemMB = node.Resources.AvailableMemMB
 	node.Resources.MaxCPUs = node.Resources.AvailableCPUs
 	node.Resources.ContainerPools = make(map[string]*node.ContainerPool)
-	// FIXME AUDIT log.Printf("Current resources: %v", node.Resources)
+	log.Printf("Current resources: %v", node.Resources)
 
 	container.InitDockerContainerFactory()
 
