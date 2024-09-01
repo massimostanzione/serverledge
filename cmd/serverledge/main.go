@@ -114,7 +114,7 @@ func main() {
 	isInCloud := config.GetBool(config.IS_IN_CLOUD, false)
 	if isInCloud {
 		registry.Area = "cloud/" + config.GetString(config.REGISTRY_AREA, "ROME")
-		log.Println("Cloud node cost: ", config.GetFloat(config.CLOUD_NODE_COST, 0))
+		// FIXME AUDIT log.Println("Cloud node cost: ", config.GetFloat(config.CLOUD_NODE_COST, 0))
 	} else {
 		registry.Area = config.GetString(config.REGISTRY_AREA, "ROME")
 	}
