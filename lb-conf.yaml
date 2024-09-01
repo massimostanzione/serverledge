@@ -7,6 +7,6 @@ mab.agent.enabled: true
 mab.agent.interval: 120
 mab.agent.strategy: "Epsilon-Greedy"
 mab.agent.reward.alpha: 0
-mab.agent.reward.beta: 1
-mab.agent.reward.gamma: 0
+mab.agent.reward.beta: 0
+mab.agent.reward.gamma: 1
 mab.agent.reward.delta: 0
