@@ -5,7 +5,7 @@ storage.token: "serverledge"
 storage.orgname: "serverledge"
 mab.agent.enabled: true
 mab.agent.interval: 120
-mab.agent.strategy: "Epsilon-Greedy"
+mab.agent.strategy: "UCB"
 mab.agent.reward.alpha: 0
 mab.agent.reward.beta: 0
 mab.agent.reward.gamma: 1
