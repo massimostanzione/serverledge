@@ -40,7 +40,7 @@ classes = [
 #]
 
 functions = [
-    {"name": "f5", "rate": 1.4, "param": 8100}
+    {"name": "f5", "rate": 10, "param": 8100}
 ]
 
 # Calcolo della distribuzione cumulativa per la selezione ponderata delle classi
