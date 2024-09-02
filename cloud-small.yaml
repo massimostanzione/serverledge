@@ -4,6 +4,6 @@ container.pool.cpus: 1.0
 container.pool.memory: 2048
 cloud: true
 cloud.cost: 0.000005
-cloud.delay: 0.005
+cloud.delay: 0.05
 scheduler.queue.capacity: 0
 metrics.enabled: false
