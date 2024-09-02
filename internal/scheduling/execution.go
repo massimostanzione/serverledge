@@ -46,8 +46,8 @@ func Execute(contID container.ContainerID, r *scheduledRequest) error {
 	}
 
 	r.ExecReport.Result = response.Result
-	r.ExecReport.Duration = time.Now().Sub(t0).Seconds() - invocationWait.Seconds() + config.GetFloat(config.CLOUD_DELAY, 0.0)
-	r.ExecReport.ResponseTime = time.Now().Sub(r.Arrival).Seconds()
+	r.ExecReport.Duration = time.Now().Sub(t0).Seconds() - invocationWait.Seconds()
+	r.ExecReport.ResponseTime = time.Now().Sub(r.Arrival).Seconds() + config.GetFloat(config.CLOUD_DELAY, 0.0)
 	r.ExecReport.Cost = 0
 
 	// Add the cost of the cloud in the report
