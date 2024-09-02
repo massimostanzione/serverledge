@@ -91,6 +91,7 @@ const DOCKER_LIMIT_CPU = "docker.cpu"
 
 // Cost of the cloud node
 const CLOUD_NODE_COST = "cloud.cost" // Cost of the cloud node (float)
+const CLOUD_DELAY = "cloud.delay"    // Delay of execution
 
 // MAB agent
 const MAB_AGENT_ENABLED = "mab.agent.enabled"                       // True if MAB agent is enabled (bool)
