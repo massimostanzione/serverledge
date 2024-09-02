@@ -19,29 +19,29 @@ random.seed(seed_value)
 func_to_list = {"f1":[], "f2":[], "f3":[], "f4":[], "f5":[]}
 
 # Definizione delle classi
-classes = [
-    {"name": "standard", "arrival_weight": 0.7},
-    {"name": "critical-1", "arrival_weight": 0.1},
-    {"name": "critical-2", "arrival_weight": 0.1},
-    {"name": "batch", "arrival_weight": 0.1}
-]
-
 #classes = [
-#    {"name": "standard", "arrival_weight": 1.0}
+#    {"name": "standard", "arrival_weight": 0.7},
+#    {"name": "critical-1", "arrival_weight": 0.1},
+#    {"name": "critical-2", "arrival_weight": 0.1},
+#    {"name": "batch", "arrival_weight": 0.1}
 #]
+
+classes = [
+    {"name": "standard", "arrival_weight": 1.0}
+]
 
 # Definizione delle funzioni e dei tassi di arrivo
-functions = [
-    {"name": "f1", "rate": 0.8, "param": 8100},
-    {"name": "f2", "rate": 1.6, "param": 6000},
-    {"name": "f3", "rate": 4.2, "param": 7200},
-    {"name": "f4", "rate": 0.6, "param": 6550},
-   {"name": "f5", "rate": 1.4, "param": 8500}
-]
-
 #functions = [
-#    {"name": "f5", "rate": 10, "param": 8100}
+#    {"name": "f1", "rate": 0.8, "param": 8100},
+#    {"name": "f2", "rate": 1.6, "param": 6000},
+#    {"name": "f3", "rate": 4.2, "param": 7200},
+#    {"name": "f4", "rate": 0.6, "param": 6550},
+#   {"name": "f5", "rate": 1.4, "param": 8500}
 #]
+
+functions = [
+    {"name": "f2", "rate": 10, "param": 6000}
+]
 
 # Calcolo della distribuzione cumulativa per la selezione ponderata delle classi
 weights = [cls['arrival_weight'] for cls in classes]
