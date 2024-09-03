@@ -34,16 +34,16 @@ func NewMABAgent() *MABAgent {
 	var selectionStrategy SelectionStrategy
 	switch Strategy(mabStrategy) {
 	case UCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
+		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		selectionStrategy = NewUCB(explorationFactor, policies, rewardConfig, influxDBWriter)
 		log.Println(lbcommon.MAB, "Using UCB Strategy")
 	case ResetUCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
+		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		resetInterval := config.GetInt(config.MAB_AGENT_RUCB_RESETINTERVAL, 0)
 		selectionStrategy = NewResetUCB(resetInterval, explorationFactor, policies, rewardConfig, influxDBWriter)
 		log.Println(lbcommon.MAB, "Using ResetUCB Strategy")
 	case SWUCBStrategy:
-		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.01)
+		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		windowSize := config.GetInt(config.MAB_AGENT_SWUCB_WINDOWSIZE, 10)
 		selectionStrategy = NewSlidingWindowUCB(windowSize, explorationFactor, policies, rewardConfig, influxDBWriter)
 		log.Println(lbcommon.MAB, "Using SWUCB Strategy")
