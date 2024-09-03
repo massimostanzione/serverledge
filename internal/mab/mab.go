@@ -36,21 +36,21 @@ func NewMABAgent() *MABAgent {
 	case UCBStrategy:
 		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		selectionStrategy = NewUCB(explorationFactor, policies, rewardConfig, influxDBWriter)
-		log.Println(lbcommon.MAB, "Using UCB Strategy")
+		log.Println(lbcommon.MAB, "Using UCB Strategy (exploration factor =", explorationFactor, ")")
 	case ResetUCBStrategy:
 		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		resetInterval := config.GetInt(config.MAB_AGENT_RUCB_RESETINTERVAL, 0)
 		selectionStrategy = NewResetUCB(resetInterval, explorationFactor, policies, rewardConfig, influxDBWriter)
-		log.Println(lbcommon.MAB, "Using ResetUCB Strategy")
+		log.Println(lbcommon.MAB, "Using ResetUCB Strategy (exploration factor =", explorationFactor, ", reset interval = ", resetInterval, ")")
 	case SWUCBStrategy:
 		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
 		windowSize := config.GetInt(config.MAB_AGENT_SWUCB_WINDOWSIZE, 10)
 		selectionStrategy = NewSlidingWindowUCB(windowSize, explorationFactor, policies, rewardConfig, influxDBWriter)
-		log.Println(lbcommon.MAB, "Using SWUCB Strategy")
+		log.Println(lbcommon.MAB, "Using SWUCB Strategy (exploration factor =", explorationFactor, ", window size =", windowSize, ")")
 	default: // EpsilonGreedyStrategy default
 		epsilon := config.GetFloat(config.MAB_AGENT_EPSILON, 0.1)
 		selectionStrategy = NewEpsilonGreedy(epsilon, policies, rewardConfig, influxDBWriter)
-		log.Println(lbcommon.MAB, "Using Epsilon-Greedy Strategy")
+		log.Println(lbcommon.MAB, "Using Epsilon-Greedy Strategy (epsilon =", epsilon, ")")
 	}
 
 	return createMABAgent(selectionStrategy, influxDBWriter)
