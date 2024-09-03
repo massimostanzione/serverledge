@@ -4,6 +4,6 @@ etcd.address: "192.168.122.21:2379"
 container.pool.memory: 2048
 cloud: true
 cloud.cost: 0.000005
-cloud.delay: 0.15
+cloud.delay: 0.1
 scheduler.queue.capacity: 0
 metrics.enabled: false
