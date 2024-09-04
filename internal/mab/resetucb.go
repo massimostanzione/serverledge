@@ -62,7 +62,7 @@ func (rucb *ResetUCB) Update(newStats, oldStats Stats) {
 	}
 
 	// Check if it's time to reset
-	if rucb.resetCounter >= rucb.resetInterval {
+	if rucb.resetCounter == rucb.resetInterval {
 		rucb.reset()
 	}
 
@@ -78,7 +78,10 @@ func (rucb *ResetUCB) reset() {
 	rucb.rewards = make(map[lbcommon.Policy]float64)
 	rucb.plays = make(map[lbcommon.Policy]int)
 	rucb.totalPlays = 0
-	rucb.resetCounter = 0
+	//rucb.resetCounter = 0
+	rucb.explorationFactor = 0.03
+	rucb.rewardConfig.Beta = 1
+	rucb.rewardConfig.Gamma = 0
 }
 
 // SelectPolicy selects a policy based on the ResetUCB algorithm
