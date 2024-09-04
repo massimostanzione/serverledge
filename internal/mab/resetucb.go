@@ -63,14 +63,14 @@ func (rucb *ResetUCB) Update(newStats, oldStats Stats) {
 
 	log.Println(lbcommon.MAB, "plays updated", rucb.plays)
 
+	timestamp := time.Now().UTC().Format(time.RFC3339)
+	influxMABStats := populateInfluxMABStats(newStats, oldStats, timestamp, reward)
+	rucb.influxDBWriter.WriteJSON(influxMABStats)
+
 	// Check if it's time to reset
 	if rucb.resetCounter == rucb.resetInterval {
 		rucb.reset()
 	}
-
-	timestamp := time.Now().UTC().Format(time.RFC3339)
-	influxMABStats := populateInfluxMABStats(newStats, oldStats, timestamp, reward)
-	rucb.influxDBWriter.WriteJSON(influxMABStats)
 }
 
 // reset method resets the rewards and plays maps
