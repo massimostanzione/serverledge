@@ -6,7 +6,7 @@ storage.orgname: "serverledge"
 mab.agent.enabled: true
 mab.agent.interval: 120
 mab.agent.strategy: "SWUCB"
-mab.agent.explorationfactor: 0.005
+mab.agent.explorationfactor: 0.004
 mab.agent.rucb.resetinterval: 15
 mab.agent.swucb.windowsize: 20
 mab.agent.reward.alpha: 0
