@@ -61,12 +61,12 @@ func (rucb *ResetUCB) Update(newStats, oldStats Stats) {
 		rucb.rewards[policy] = avgReward + (1/count)*(reward-avgReward)
 	}
 
+	log.Println(lbcommon.MAB, "plays updated", rucb.plays)
+
 	// Check if it's time to reset
 	if rucb.resetCounter == rucb.resetInterval {
 		rucb.reset()
 	}
-
-	log.Println(lbcommon.MAB, "plays updated", rucb.plays)
 
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	influxMABStats := populateInfluxMABStats(newStats, oldStats, timestamp, reward)
