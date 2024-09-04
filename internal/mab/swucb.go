@@ -12,14 +12,15 @@ import (
 
 // SlidingWindowUCB struct
 type SlidingWindowUCB struct {
-	windowSize        int                          // Size of the sliding window
-	explorationFactor float64                      // Exploration factor of UCB
-	policies          []lbcommon.Policy            // List of available policies (actions)
-	rewards           map[lbcommon.Policy]float64  // Average rewards for each policy within the window
-	plays             map[lbcommon.Policy]int      // Count of times each policy was played within the window
-	totalPlays        int                          // Total number of plays across all policies within the window
-	history           *list.List                   // List to maintain policy history and their rewards
-	rewardConfig      RewardConfig                 // Reward calculation parameters
+	windowSize        int                         // Size of the sliding window
+	explorationFactor float64                     // Exploration factor of UCB
+	policies          []lbcommon.Policy           // List of available policies (actions)
+	rewards           map[lbcommon.Policy]float64 // Average rewards for each policy within the window
+	plays             map[lbcommon.Policy]int     // Count of times each policy was played within the window
+	totalPlays        int                         // Total number of plays across all policies within the window
+	history           *list.List                  // List to maintain policy history and their rewards
+	rewardConfig      RewardConfig                // Reward calculation parameters
+	resetCounter      int
 	influxDBWriter    *influxwriter.InfluxDBWriter // Writer for InfluxDB
 }
 
@@ -40,6 +41,7 @@ func NewSlidingWindowUCB(windowSize int, explorationFactor float64, policies []l
 		totalPlays:        0,
 		history:           list.New(),
 		rewardConfig:      rewardConfig,
+		resetCounter:      0,
 		influxDBWriter:    influxDBWriter,
 	}
 }
@@ -48,6 +50,8 @@ func NewSlidingWindowUCB(windowSize int, explorationFactor float64, policies []l
 func (swucb *SlidingWindowUCB) Update(newStats, oldStats Stats) {
 	policy := newStats.LBPolicy
 	reward := CalculateReward(swucb.rewardConfig, newStats, oldStats)
+
+	swucb.resetCounter++
 
 	// If the window is full, remove the oldest entry and update counts
 	if swucb.history.Len() == swucb.windowSize {
@@ -65,6 +69,19 @@ func (swucb *SlidingWindowUCB) Update(newStats, oldStats Stats) {
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	influxMABStats := populateInfluxMABStats(newStats, oldStats, timestamp, reward)
 	swucb.influxDBWriter.WriteJSON(influxMABStats)
+
+	// Check if it's time to reset
+	if swucb.resetCounter == 15 {
+		swucb.reset()
+	}
+
+}
+
+// reset method resets the rewards and plays maps
+func (swucb *SlidingWindowUCB) reset() {
+	swucb.explorationFactor = 0.03
+	swucb.rewardConfig.Beta = 1
+	swucb.rewardConfig.Gamma = 0
 }
 
 // Increments counts and rewards
