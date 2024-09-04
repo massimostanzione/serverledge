@@ -11,12 +11,13 @@ import (
 
 // UCB struct
 type UCB struct {
-	explorationFactor float64                      // Exploration factor of UCB
-	policies          []lbcommon.Policy            // List of available policies (actions)
-	rewards           map[lbcommon.Policy]float64  // Average rewards for each policy
-	plays             map[lbcommon.Policy]int      // Count of times each policy was played
-	totalPlays        int                          // Total number of plays across all policies
-	rewardConfig      RewardConfig                 // Reward calculation parameters
+	explorationFactor float64                     // Exploration factor of UCB
+	policies          []lbcommon.Policy           // List of available policies (actions)
+	rewards           map[lbcommon.Policy]float64 // Average rewards for each policy
+	plays             map[lbcommon.Policy]int     // Count of times each policy was played
+	totalPlays        int                         // Total number of plays across all policies
+	rewardConfig      RewardConfig                // Reward calculation parameters
+	resetCounter      int
 	influxDBWriter    *influxwriter.InfluxDBWriter // Writer for InfluxDB
 }
 
@@ -29,6 +30,7 @@ func NewUCB(explorationFactor float64, policies []lbcommon.Policy, rewardConfig 
 		plays:             make(map[lbcommon.Policy]int),
 		totalPlays:        0,
 		rewardConfig:      rewardConfig,
+		resetCounter:      0,
 		influxDBWriter:    influxDBWriter,
 	}
 }
@@ -37,6 +39,8 @@ func NewUCB(explorationFactor float64, policies []lbcommon.Policy, rewardConfig 
 func (ucb *UCB) Update(newStats, oldStats Stats) {
 	policy := newStats.LBPolicy
 	reward := CalculateReward(ucb.rewardConfig, newStats, oldStats)
+
+	ucb.resetCounter++
 
 	// Update the count of plays for the policy
 	if _, exists := ucb.plays[policy]; !exists {
@@ -61,6 +65,18 @@ func (ucb *UCB) Update(newStats, oldStats Stats) {
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	influxMABStats := populateInfluxMABStats(newStats, oldStats, timestamp, reward)
 	ucb.influxDBWriter.WriteJSON(influxMABStats)
+
+	// Check if it's time to reset
+	if ucb.resetCounter == 15 {
+		ucb.reset()
+	}
+}
+
+// reset method resets the rewards and plays maps
+func (ucb *UCB) reset() {
+	ucb.explorationFactor = 0.03
+	ucb.rewardConfig.Beta = 1
+	ucb.rewardConfig.Gamma = 0
 }
 
 // SelectPolicy selects a policy based on the UCB algorithm

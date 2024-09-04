@@ -74,7 +74,6 @@ func (swucb *SlidingWindowUCB) Update(newStats, oldStats Stats) {
 	if swucb.resetCounter == 15 {
 		swucb.reset()
 	}
-
 }
 
 // reset method resets the rewards and plays maps
