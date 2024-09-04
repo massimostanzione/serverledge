@@ -7,7 +7,7 @@ mab.agent.enabled: true
 mab.agent.interval: 120
 mab.agent.strategy: "ResetUCB"
 mab.agent.explorationfactor: 0.004
-mab.agent.interval: 2
+mab.agent.rucb.resetinterval: 2
 mab.agent.reward.alpha: 0
 mab.agent.reward.beta: 0
 mab.agent.reward.gamma: 1
