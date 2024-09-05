@@ -31,13 +31,22 @@ classes = [
 #]
 
 # Definizione delle funzioni e dei tassi di arrivo
+#functions = [
+#    {"name": "f1", "rate": 0.8, "param": 8100},
+#    {"name": "f2", "rate": 1.6, "param": 6000},
+#    {"name": "f3", "rate": 4.2, "param": 7200},
+#    {"name": "f4", "rate": 0.6, "param": 6550},
+#   {"name": "f5", "rate": 1.4, "param": 8500}
+#]
+
 functions = [
-    {"name": "f1", "rate": 0.8, "param": 8100},
-    {"name": "f2", "rate": 1.6, "param": 6000},
-    {"name": "f3", "rate": 4.2, "param": 7200},
-    {"name": "f4", "rate": 0.6, "param": 6550},
-   {"name": "f5", "rate": 1.4, "param": 8500}
+    {"name": "f1", "rate": 0.2, "param": 8100},
+    {"name": "f2", "rate": 0.4, "param": 6000},
+    {"name": "f3", "rate": 2.0, "param": 7200},
+    {"name": "f4", "rate": 0.1, "param": 6550},
+    {"name": "f5", "rate": 0.3, "param": 8500}
 ]
+
 
 #functions = [
 #    {"name": "f2", "rate": 10, "param": 6000}
