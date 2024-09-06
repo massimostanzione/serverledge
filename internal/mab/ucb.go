@@ -67,9 +67,9 @@ func (ucb *UCB) Update(newStats, oldStats Stats) {
 	ucb.influxDBWriter.WriteJSON(influxMABStats)
 
 	// Check if it's time to reset
-	if ucb.resetCounter == 15 {
-		ucb.reset()
-	}
+	//if ucb.resetCounter == 15 {
+	//	ucb.reset()
+	//}
 }
 
 // reset method resets the rewards and plays maps

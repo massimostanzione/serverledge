@@ -11,5 +11,5 @@ mab.agent.rucb.resetinterval: 15
 mab.agent.swucb.windowsize: 10
 mab.agent.reward.alpha: 0
 mab.agent.reward.beta: 0
-mab.agent.reward.gamma: 1
-mab.agent.reward.delta: 0
+mab.agent.reward.gamma: 0
+mab.agent.reward.delta: 1
