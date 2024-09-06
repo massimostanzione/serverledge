@@ -8,7 +8,7 @@ import (
 )
 
 const MAX_COST = 5.0
-const MAX_UTILITY = 100000.0
+const MAX_UTILITY = 10000.0
 
 // CalculateReward computes the overall reward based on the given reward configuration and
 // the differences between new and old statistics. It combines the contributions of load imbalance,
