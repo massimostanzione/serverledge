@@ -71,9 +71,6 @@ func (p *DefaultLocalPolicy) OnCompletion(completed *scheduledRequest) {
 
 func (p *DefaultLocalPolicy) OnArrival(r *scheduledRequest) {
 
-	log.Println("Warm status:", node.WarmStatus())
-	log.Println("Busy status:", node.BusyStatus())
-
 	containerID, err := node.AcquireWarmContainer(r.Fun)
 	if err == nil {
 		execLocally(r, containerID, true)
