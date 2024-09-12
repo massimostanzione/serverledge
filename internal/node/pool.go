@@ -158,6 +158,10 @@ func ReleaseContainer(contID container.ContainerID, f *function.Function) {
 
 	releaseResources(f.CPUDemand, 0)
 
+	if deleted == nil {
+		panic("nil container")
+	}
+
 	//log.Printf("Released resources. Now: %v", Resources)
 }
 
