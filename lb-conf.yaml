@@ -10,6 +10,7 @@ mab.agent.explorationfactor: 0.05
 mab.agent.rucb.resetinterval: 15
 mab.agent.swucb.windowsize: 10
 mab.agent.ucb2.alpha: 1
+mab.agent.klucb.c: 1
 mab.agent.reward.alpha: 0
 mab.agent.reward.beta: 0
 mab.agent.reward.gamma: 0
