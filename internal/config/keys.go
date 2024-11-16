@@ -105,3 +105,5 @@ const MAB_AGENT_EPSILON = "mab.agent.epsilon"                       // Probabili
 const MAB_AGENT_EXPLORATIONFACTOR = "mab.agent.explorationfactor"   // Exploration factor for UCB, ResetUCB and SWUCB strategies (float)
 const MAB_AGENT_SWUCB_WINDOWSIZE = "mab.agent.swucb.windowsize"     // Size of the sliding window for SWUCB strategy (int)
 const MAB_AGENT_RUCB_RESETINTERVAL = "mab.agent.rucb.resetinterval" // Reset interval for ResetUCB strategy (int)
+const MAB_AGENT_UCB2_ALPHA = "mab.agent.ucb2.alpha"                 // \alpha parameter for UCB2
+const MAB_AGENT_KLUCB_C = "mab.agent.klucb.c"                       // \alpha parameter for UCB2

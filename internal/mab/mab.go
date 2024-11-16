@@ -47,6 +47,11 @@ func NewMABAgent() *MABAgent {
 		windowSize := config.GetInt(config.MAB_AGENT_SWUCB_WINDOWSIZE, 10)
 		selectionStrategy = NewSlidingWindowUCB(windowSize, explorationFactor, policies, rewardConfig, influxDBWriter)
 		log.Println(lbcommon.MAB, "Using SWUCB Strategy ( exploration factor =", explorationFactor, ", window size =", windowSize, ")")
+	case UCB2Strategy:
+		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
+		alpha := config.GetFloat(config.MAB_AGENT_UCB2_ALPHA, 1.0)
+		selectionStrategy = NewUCB2(explorationFactor, alpha, policies, rewardConfig, influxDBWriter)
+		log.Println(lbcommon.MAB, "Using UCB2 Strategy ( exploration factor =", explorationFactor, ", alpha =", alpha, ")")
 	default: // EpsilonGreedyStrategy default
 		epsilon := config.GetFloat(config.MAB_AGENT_EPSILON, 0.1)
 		selectionStrategy = NewEpsilonGreedy(epsilon, policies, rewardConfig, influxDBWriter)
