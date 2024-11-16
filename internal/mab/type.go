@@ -29,6 +29,7 @@ const (
 	ResetUCBStrategy      Strategy = "ResetUCB"
 	SWUCBStrategy         Strategy = "SWUCB"
 	UCB2Strategy          Strategy = "UCB2"
+	UCBTunedStrategy      Strategy = "UCBTuned"
 )
 
 // SelectionStrategy defines the methods that any strategy should implement

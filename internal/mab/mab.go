@@ -52,6 +52,10 @@ func NewMABAgent() *MABAgent {
 		alpha := config.GetFloat(config.MAB_AGENT_UCB2_ALPHA, 1.0)
 		selectionStrategy = NewUCB2(explorationFactor, alpha, policies, rewardConfig, influxDBWriter)
 		log.Println(lbcommon.MAB, "Using UCB2 Strategy ( exploration factor =", explorationFactor, ", alpha =", alpha, ")")
+	case UCBTunedStrategy:
+		explorationFactor := config.GetFloat(config.MAB_AGENT_EXPLORATIONFACTOR, 0.05)
+		selectionStrategy = NewUCBTuned(explorationFactor, policies, rewardConfig, influxDBWriter)
+		log.Println(lbcommon.MAB, "Using UCBTuned Strategy ( exploration factor =", explorationFactor, ")")
 	default: // EpsilonGreedyStrategy default
 		epsilon := config.GetFloat(config.MAB_AGENT_EPSILON, 0.1)
 		selectionStrategy = NewEpsilonGreedy(epsilon, policies, rewardConfig, influxDBWriter)
