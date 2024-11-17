@@ -7,6 +7,9 @@ import (
 	"github.com/grussorusso/serverledge/internal/lbcommon"
 )
 
+// Upper bounds for the addends of the reward function
+const MAX_LOAD_IMBALANCE = 3.0 // as coefficient of variation (D^2/E), UB empirically determined
+const MAX_RT = 1.0             // max avg resp time, already normalized but can be tuned
 const MAX_COST = 5.0
 const MAX_UTILITY = 1000.0
 
@@ -23,6 +26,7 @@ func CalculateReward(rewardConfig RewardConfig, newStats, oldStats Stats) float6
 // for each server, computes the mean and standard deviation of these differences,
 // and returns the negative imbalance percentage. If there are no server load values,
 // it returns 0.
+// The result represents the normalized load imbalance, scaled by MAX_LOAD_IMBALANCE.
 func calculateLoadImbalance(newStats, oldStats Stats) float64 {
 	// Create a new map to store the differences
 	diffs := make(map[string]int)
@@ -63,8 +67,13 @@ func calculateLoadImbalance(newStats, oldStats Stats) float64 {
 	// Calculate imbalance percentage
 	imbalancePercentage := stdDev / meanLoad
 
+	// Safety check
+	if imbalancePercentage/MAX_LOAD_IMBALANCE > 1 {
+		log.Println(lbcommon.MAB, "imbalance percentage out of [0, 1] bounds! ->", imbalancePercentage)
+	}
+
 	// Return negative imbalance percentage
-	return -imbalancePercentage
+	return -(imbalancePercentage / MAX_LOAD_IMBALANCE)
 }
 
 // Helper function to calculate the mean of a slice
@@ -91,6 +100,7 @@ func calculateStandardDeviation(values []int, mean float64) float64 {
 // between the new and old statistics. It returns the negative average response time
 // calculated as the total response time divided by the total number of completions.
 // If there are no completions, it returns 0.
+// The result represents the normalized RT, scaled by MAX_RT.
 func calculateResponseTime(newStats, oldStats Stats) float64 {
 	totalResponseTime := newStats.RespTime - oldStats.RespTime
 	totalCompletions := newStats.Completions - oldStats.Completions
@@ -98,7 +108,13 @@ func calculateResponseTime(newStats, oldStats Stats) float64 {
 		return 0
 	}
 	avgRespTime := totalResponseTime / float64(totalCompletions)
-	return -avgRespTime
+
+	// Safety check
+	if avgRespTime/MAX_RT > 1 {
+		log.Println(lbcommon.MAB, "RT out of [0, 1] bounds! ->", avgRespTime)
+	}
+
+	return -(avgRespTime / MAX_RT)
 }
 
 // calculateCost computes the cost difference between new and old statistics.
@@ -107,6 +123,12 @@ func calculateResponseTime(newStats, oldStats Stats) float64 {
 func calculateCost(newStats, oldStats Stats) float64 {
 	currentCost := newStats.Cost - oldStats.Cost
 	log.Println(lbcommon.MAB, "CurrentCost", currentCost)
+
+	// Safety check
+	if currentCost/MAX_COST > 1 {
+		log.Println(lbcommon.MAB, "cost out of [0, 1] bounds! ->", currentCost)
+	}
+
 	return -(currentCost / MAX_COST)
 }
 
@@ -115,5 +137,11 @@ func calculateCost(newStats, oldStats Stats) float64 {
 // The result represents the normalized utility, scaled by MAX_UTILITY.
 func calculateUtility(newStats, oldStats Stats) float64 {
 	currentUtility := newStats.RawUtility - oldStats.RawUtility
+
+	// Safety check
+	if currentUtility/MAX_UTILITY > 1 {
+		log.Println(lbcommon.MAB, "utility out of [0, 1] bounds! ->", currentUtility)
+	}
+
 	return -(1 - (currentUtility / MAX_UTILITY))
 }
