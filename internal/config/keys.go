@@ -101,6 +101,7 @@ const MAB_AGENT_REWARD_ALPHA = "mab.agent.reward.alpha"             // Coefficie
 const MAB_AGENT_REWARD_BETA = "mab.agent.reward.beta"               // Coefficient for response time (float)
 const MAB_AGENT_REWARD_GAMMA = "mab.agent.reward.gamma"             // Coefficient for cost (float)
 const MAB_AGENT_REWARD_DELTA = "mab.agent.reward.delta"             // Coefficient for utility (float)
+const MAB_AGENT_REWARD_ZETA = "mab.agent.reward.zeta"               // Coefficient for violations count (float)
 const MAB_AGENT_EPSILON = "mab.agent.epsilon"                       // Probability of exploration for the epsilon-greedy strategy (float)
 const MAB_AGENT_EXPLORATIONFACTOR = "mab.agent.explorationfactor"   // Exploration factor for UCB, ResetUCB and SWUCB strategies (float)
 const MAB_AGENT_SWUCB_WINDOWSIZE = "mab.agent.swucb.windowsize"     // Size of the sliding window for SWUCB strategy (int)

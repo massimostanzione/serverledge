@@ -23,7 +23,8 @@ func NewMABAgent() *MABAgent {
 	beta := config.GetFloat(config.MAB_AGENT_REWARD_BETA, 0)
 	gamma := config.GetFloat(config.MAB_AGENT_REWARD_GAMMA, 0)
 	delta := config.GetFloat(config.MAB_AGENT_REWARD_DELTA, 0)
-	rewardConfig := RewardConfig{Alpha: alpha, Beta: beta, Gamma: gamma, Delta: delta}
+	zeta := config.GetFloat(config.MAB_AGENT_REWARD_ZETA, 0)
+	rewardConfig := RewardConfig{Alpha: alpha, Beta: beta, Gamma: gamma, Delta: delta, Zeta: zeta}
 
 	// Get available load balancing policies
 	policies := lbcommon.GetAllPolicies()

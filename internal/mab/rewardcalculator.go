@@ -12,13 +12,14 @@ const MAX_LOAD_IMBALANCE = 3.0 // as coefficient of variation (D^2/E), UB empiri
 const MAX_RT = 1.0             // max avg resp time, already normalized but can be tuned
 const MAX_COST = 5.0
 const MAX_UTILITY = 1000.0
+const MAX_VIOLATIONS = 10000.0 // max RT violations, UB empirically determined
 
 // CalculateReward computes the overall reward based on the given reward configuration and
 // the differences between new and old statistics. It combines the contributions of load imbalance,
-// response time, cost, and utility, each weighted by their respective coefficients (Alpha, Beta, Gamma, Delta)
+// response time, cost, utility, violations count each weighted by their respective coefficients (Alpha, Beta, Gamma, Delta, Zeta)
 // from the RewardConfig. The result represents the aggregated reward score based on the specified metrics.
 func CalculateReward(rewardConfig RewardConfig, newStats, oldStats Stats) float64 {
-	return rewardConfig.Alpha*calculateLoadImbalance(newStats, oldStats) + rewardConfig.Beta*calculateResponseTime(newStats, oldStats) + rewardConfig.Gamma*calculateCost(newStats, oldStats) + rewardConfig.Delta*calculateUtility(newStats, oldStats)
+	return rewardConfig.Alpha*calculateLoadImbalance(newStats, oldStats) + rewardConfig.Beta*calculateResponseTime(newStats, oldStats) + rewardConfig.Gamma*calculateCost(newStats, oldStats) + rewardConfig.Delta*calculateUtility(newStats, oldStats) + rewardConfig.Zeta*calculateViolations(newStats, oldStats)
 }
 
 // calculateLoadImbalance computes the load imbalance based on the differences
@@ -144,4 +145,18 @@ func calculateUtility(newStats, oldStats Stats) float64 {
 	}
 
 	return -(1 - (currentUtility / MAX_UTILITY))
+}
+
+// calculateViolations computes the no. of violation occurred between new and old statistics.
+// It returns the negative value of the violation count difference divided by a constant MAX_VIOLATIONS.
+// The result represents the normalized no. of violation occurred, scaled by MAX_VIOLATIONS.
+func calculateViolations(newStats, oldStats Stats) float64 {
+	violations := 0 //TODO newStats.RawUtility - oldStats.RawUtility
+
+	// Safety check
+	if violations/MAX_VIOLATIONS > 1 {
+		log.Println(lbcommon.MAB, "violations count out of [0, 1] bounds! ->", violations)
+	}
+
+	return float64(-(violations / MAX_VIOLATIONS))
 }

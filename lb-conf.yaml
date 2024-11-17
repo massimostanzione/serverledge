@@ -15,3 +15,4 @@ mab.agent.reward.alpha: 0
 mab.agent.reward.beta: 0
 mab.agent.reward.gamma: 0
 mab.agent.reward.delta: 1
+mab.agent.reward.zeta: 0

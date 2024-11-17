@@ -52,4 +52,5 @@ type RewardConfig struct {
 	Beta  float64 // Coefficient for response time
 	Gamma float64 // Coefficient for cost
 	Delta float64 // Coefficient for utility
+	Zeta  float64 // Coefficient for violations count
 }
