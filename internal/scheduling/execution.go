@@ -60,6 +60,10 @@ func Execute(contID container.ContainerID, r *scheduledRequest) error {
 	// latency
 	r.ExecReport.InitTime += invocationWait.Seconds()
 
+	if r.ExecReport.ResponseTime > r.RequestQoS.MaxRespT {
+		r.ExecReport.Violations += 1
+	}
+
 	// notify scheduler
 	completions <- &completion{scheduledRequest: r, contID: contID}
 

@@ -150,7 +150,7 @@ func getLBPolicy(p lbcommon.Policy, lbProxy *LBProxy) LBPolicy {
 }
 
 // newStats creates and returns a new instance of mab.Stats initialized with the provided load balancing policy.
-// It sets up maps for server loads and dropped requests, and initializes other metrics (response time, completions, cost, and utility) to zero.
+// It sets up maps for server loads and dropped requests, and initializes other metrics (response time, completions, cost, utility, violations) to zero.
 func newStats(lbPolicy lbcommon.Policy, targets []*url.URL) *mab.Stats {
 	serverLoads := make(map[string]int)
 	droppedReqs := make(map[string]int)
@@ -166,6 +166,7 @@ func newStats(lbPolicy lbcommon.Policy, targets []*url.URL) *mab.Stats {
 		DroppedReqs: droppedReqs,
 		Arrivals:    0,
 		Completions: 0,
+		Violations:  0,
 		Drops:       0,
 		RespTime:    0,
 		Cost:        0,
@@ -183,6 +184,7 @@ func updateStats(lbP *LBProxy, executionReport function.ExecutionReport, backend
 	} else { // Request completed
 		lbP.newStats.Completions += 1
 		lbP.newStats.RespTime += executionReport.ResponseTime
+		lbP.newStats.Violations += executionReport.Violations
 		lbP.newStats.Cost += executionReport.CostCloud
 		lbP.newStats.RawUtility += executionReport.Utility
 	}
@@ -196,6 +198,7 @@ func copyStats(newStats *mab.Stats, oldStats *mab.Stats) {
 	oldStats.LBPolicy = newStats.LBPolicy
 	oldStats.Arrivals = newStats.Arrivals
 	oldStats.Completions = newStats.Completions
+	oldStats.Violations = newStats.Violations
 	oldStats.Drops = newStats.Drops
 	oldStats.RespTime = newStats.RespTime
 	oldStats.Cost = newStats.Cost

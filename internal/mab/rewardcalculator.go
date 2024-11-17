@@ -151,7 +151,7 @@ func calculateUtility(newStats, oldStats Stats) float64 {
 // It returns the negative value of the violation count difference divided by a constant MAX_VIOLATIONS.
 // The result represents the normalized no. of violation occurred, scaled by MAX_VIOLATIONS.
 func calculateViolations(newStats, oldStats Stats) float64 {
-	violations := 0 //TODO newStats.RawUtility - oldStats.RawUtility
+	violations := newStats.Violations - oldStats.Violations
 
 	// Safety check
 	if violations/MAX_VIOLATIONS > 1 {

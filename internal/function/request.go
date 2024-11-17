@@ -28,6 +28,7 @@ type ExecutionReport struct {
 	Class               string
 	Result              string
 	ResponseTime        float64
+	Violations          int
 	IsWarmStart         bool
 	InitTime            float64
 	Duration            float64

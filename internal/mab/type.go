@@ -15,6 +15,7 @@ type Stats struct {
 	DroppedReqs map[string]int  // The total number of requests dropped by each server
 	Arrivals    int             // The total number of incoming requests
 	Completions int             // The total number of completed requests
+	Violations  int             // The total number of response time violations
 	Drops       int             // The total number of dropped requests
 	RespTime    float64         // The cumulative response time
 	Cost        float64         // The cumulative cost

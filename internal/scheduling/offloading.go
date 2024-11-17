@@ -159,6 +159,10 @@ func Offload(r *function.Request, serverUrl string) error {
 	now := time.Now()
 	response.ExecutionReport.ResponseTime = now.Sub(r.Arrival).Seconds()
 
+	if response.ExecutionReport.ResponseTime > r.RequestQoS.MaxRespT {
+		response.ExecutionReport.Violations += 1
+	}
+
 	if checkIfCloudOffloading(serverUrl) {
 		r.ExecReport.OffloadLatencyCloud = time.Now().Sub(sendingTime).Seconds() - r.ExecReport.Duration - r.ExecReport.InitTime
 		r.ExecReport.SchedAction = SCHED_ACTION_OFFLOAD_CLOUD
