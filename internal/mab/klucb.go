@@ -15,6 +15,7 @@ type KLUCB struct {
 	c                 float64                     // \c factor of KL-UCB
 	policies          []lbcommon.Policy           // List of available policies (actions)
 	rewards           map[lbcommon.Policy]float64 // Average rewards for each policy
+	cumQ              map[lbcommon.Policy]float64 // Cumulative rewards for each policy
 	plays             map[lbcommon.Policy]int     // Count of times each policy was played
 	totalPlays        int                         // Total number of plays across all policies
 	rewardConfig      RewardConfig                // Reward calculation parameters
@@ -29,6 +30,7 @@ func NewKLUCB(explorationFactor float64, c float64, policies []lbcommon.Policy, 
 		c:                 c,
 		policies:          policies,
 		rewards:           make(map[lbcommon.Policy]float64),
+		cumQ:              make(map[lbcommon.Policy]float64),
 		plays:             make(map[lbcommon.Policy]int),
 		totalPlays:        0,
 		rewardConfig:      rewardConfig,
@@ -51,6 +53,7 @@ func (ucb *KLUCB) Update(newStats, oldStats Stats) {
 	ucb.plays[policy]++
 	ucb.totalPlays++
 
+	ucb.cumQ[policy] += reward
 	// Apply the incremental update formula
 	if ucb.plays[policy] == 1 {
 		// If this is the first time the policy is played, set the reward directly
@@ -92,15 +95,16 @@ func (ucb *KLUCB) _kl(p float64, q float64) float64 {
 
 func (ucb *KLUCB) _q(policy lbcommon.Policy) float64 {
 	t := ucb.totalPlays
+	shifted_reward := ucb.rewards[policy] + 1 // in order to have the reward into [0, 1], as required by KL
 	upper_limit := 1.0
-	lower_limit := ucb.rewards[policy] + 1
+	lower_limit := shifted_reward
 	epsilon := 1e-6 // tolerance
 	target := (math.Log(float64(t)) + ucb.c*math.Log(math.Log(float64(t)))) / float64(ucb.plays[policy])
 
 	// find the q value via binary searhc
 	for upper_limit-lower_limit > epsilon {
 		q := (upper_limit + lower_limit) / 2
-		if ucb._kl(ucb.rewards[policy]+1, q) <= target {
+		if ucb._kl(-(ucb.cumQ[policy])/float64(ucb.plays[policy]), q) <= target {
 			lower_limit = q
 		} else {
 			upper_limit = q
