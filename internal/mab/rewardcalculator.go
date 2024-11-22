@@ -12,7 +12,6 @@ const MAX_LOAD_IMBALANCE = 3.0 // as coefficient of variation (D^2/E), UB empiri
 const MAX_RT = 1.0             // max avg resp time, already normalized but can be tuned
 const MAX_COST = 5.0
 const MAX_UTILITY = 1000.0
-const MAX_VIOLATIONS = 10000.0 // max RT violations, UB empirically determined
 
 // CalculateReward computes the overall reward based on the given reward configuration and
 // the differences between new and old statistics. It combines the contributions of load imbalance,
@@ -147,16 +146,19 @@ func calculateUtility(newStats, oldStats Stats) float64 {
 	return -(1 - (currentUtility / MAX_UTILITY))
 }
 
-// calculateViolations computes the no. of violation occurred between new and old statistics.
-// It returns the negative value of the violation count difference divided by a constant MAX_VIOLATIONS.
-// The result represents the normalized no. of violation occurred, scaled by MAX_VIOLATIONS.
+// calculateViolations computes the percentage of violation occurred between new and old statistics.
+// It returns the negative value of the percentage of requests for which an RT violation has occurred
+// The result represents the percentage of violation occurred.
 func calculateViolations(newStats, oldStats Stats) float64 {
 	violations := newStats.Violations - oldStats.Violations
+	completions := newStats.Completions - oldStats.Completions
+
+	violationsPerc := violations / completions
 
 	// Safety check
-	if violations/MAX_VIOLATIONS > 1 {
-		log.Println(lbcommon.MAB, "violations count out of [0, 1] bounds! ->", violations)
+	if violationsPerc > 1 {
+		log.Println(lbcommon.MAB, "violations percentage out of [0, 1] bounds! ->", violationsPerc)
 	}
 
-	return float64(-(violations / MAX_VIOLATIONS))
+	return float64(-violationsPerc)
 }
